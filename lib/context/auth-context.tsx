@@ -4,20 +4,16 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import type { AuthResponse } from "../types/auth";
 
-interface AuthState {
+interface AuthContextValue {
   user: AuthResponse | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-}
-
-interface AuthContextValue extends AuthState {
   setUser: (auth: AuthResponse) => void;
   logout: () => void;
 }
@@ -26,51 +22,49 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 const STORAGE_KEY = "auth";
 
-function loadAuth(): AuthResponse | null {
+function subscribeAuth(callback: () => void): () => void {
+  window.addEventListener("storage", callback);
+  return () => window.removeEventListener("storage", callback);
+}
+
+function getSnapshot(): string | null {
   if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw) as AuthResponse;
-    if (new Date(data.expiresAt) <= new Date()) {
-      localStorage.removeItem(STORAGE_KEY);
-      return null;
-    }
-    return data;
-  } catch {
-    localStorage.removeItem(STORAGE_KEY);
-    return null;
-  }
+  return localStorage.getItem(STORAGE_KEY);
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUserState] = useState<AuthResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const rawSnapshot = useSyncExternalStore(subscribeAuth, getSnapshot, () => null);
 
-  useEffect(() => {
-    setUserState(loadAuth());
-    setIsLoading(false);
-  }, []);
+  const user = useMemo(() => {
+    if (rawSnapshot === null) return null;
+    try {
+      const data = JSON.parse(rawSnapshot) as AuthResponse;
+      if (new Date(data.expiresAt) <= new Date()) return null;
+      return data;
+    } catch {
+      return null;
+    }
+  }, [rawSnapshot]);
 
   const setUser = useCallback((auth: AuthResponse) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(auth));
-    setUserState(auth);
+    window.dispatchEvent(new Event("storage"));
   }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
-    setUserState(null);
+    window.dispatchEvent(new Event("storage"));
   }, []);
 
   const value = useMemo(
     () => ({
       user,
-      isLoading,
+      isLoading: false,
       isAuthenticated: user !== null,
       setUser,
       logout,
     }),
-    [user, isLoading, setUser, logout],
+    [user, setUser, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -40,10 +40,12 @@ export default function LoginPage() {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     if (!clientId || clientId === "TU_GOOGLE_CLIENT_ID_AQUI") return;
 
+    const resolvedClientId = clientId;
+
     function onGoogleLoad() {
       if (!window.google) return;
       window.google.accounts.id.initialize({
-        client_id: clientId,
+        client_id: resolvedClientId,
         callback: async (response) => {
           try {
             setError(null);
