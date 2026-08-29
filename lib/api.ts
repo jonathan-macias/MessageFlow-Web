@@ -1,6 +1,12 @@
 import type { AuthResponse, LoginRequest, RegisterRequest, GoogleLoginRequest, Rfc7807Error } from "./types/auth";
 import type { DatasetListItem, DatasetDetail, DatasetColumn, PaginatedRows, UploadDatasetResponse } from "./types/dataset";
-import type { CreateFlowRequest, CreateFlowResponse, PaginatedFlows } from "./types/flow";
+import type {
+  CreateFlowRequest, CreateFlowResponse, FlowDetail, PaginatedFlows,
+  UpdateFlowRequest, UpdateMessageRequest, FlowFilter,
+  ExecuteFlowResponse, PaginatedExecutions, FlowExecutionDetail,
+  PreviewMessageRequest, PreviewMessageResponse,
+  PreviewFilterRequest, PreviewFilterResponse,
+} from "./types/flow";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://localhost:7110";
 
@@ -16,24 +22,23 @@ function getAccessToken(): string | null {
   }
 }
 
-async function request<T>(path: string, options: RequestInit): Promise<T> {
+function buildHeaders(extra?: Record<string, string>): Record<string, string> {
+  const headers: Record<string, string> = { ...extra };
   const token = getAccessToken();
-  const headers: Record<string, string> = {
-    ...options.headers as Record<string, string>,
-  };
-
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
+  return headers;
+}
+
+async function request<T>(path: string, options: RequestInit): Promise<T> {
+  const headers = buildHeaders(options.headers as Record<string, string>);
 
   if (!(options.body instanceof FormData)) {
     headers["Content-Type"] = "application/json";
   }
 
-  const res = await fetch(`${BASE_URL}${path}`, {
-    ...options,
-    headers,
-  });
+  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
 
   if (!res.ok) {
     const body = await res.json().catch(() => null);
@@ -46,7 +51,29 @@ async function request<T>(path: string, options: RequestInit): Promise<T> {
     throw error;
   }
 
+  if (res.status === 204 || res.headers.get("content-length") === "0") {
+    return undefined as T;
+  }
+
   return res.json() as Promise<T>;
+}
+
+async function requestVoid(path: string, options: RequestInit): Promise<void> {
+  const headers = buildHeaders(options.headers as Record<string, string>);
+  headers["Content-Type"] = "application/json";
+
+  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    const error: Rfc7807Error = body ?? {
+      type: "about:blank",
+      title: "Error",
+      status: res.status,
+      detail: res.statusText,
+    };
+    throw error;
+  }
 }
 
 // ── Auth ──────────────────────────────────────────────
@@ -130,4 +157,86 @@ export function createFlow(data: CreateFlowRequest): Promise<CreateFlowResponse>
     method: "POST",
     body: JSON.stringify(data),
   });
+}
+
+export function getFlow(id: string): Promise<FlowDetail> {
+  return request<FlowDetail>(`/api/flows/${id}`, { method: "GET" });
+}
+
+export function updateFlow(id: string, data: UpdateFlowRequest): Promise<void> {
+  return requestVoid(`/api/flows/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteFlow(id: string): Promise<void> {
+  return requestVoid(`/api/flows/${id}`, { method: "DELETE" });
+}
+
+export function updateFlowMessage(id: string, data: UpdateMessageRequest): Promise<void> {
+  return requestVoid(`/api/flows/${id}/message`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateFlowFilter(id: string, filter: FlowFilter | null): Promise<void> {
+  return requestVoid(`/api/flows/${id}/filter`, {
+    method: "PUT",
+    body: JSON.stringify({ filter }),
+  });
+}
+
+export function activateFlow(id: string): Promise<void> {
+  return requestVoid(`/api/flows/${id}/activate`, { method: "POST" });
+}
+
+export function pauseFlow(id: string): Promise<void> {
+  return requestVoid(`/api/flows/${id}/pause`, { method: "POST" });
+}
+
+export function archiveFlow(id: string): Promise<void> {
+  return requestVoid(`/api/flows/${id}/archive`, { method: "POST" });
+}
+
+export function executeFlow(id: string): Promise<ExecuteFlowResponse> {
+  return request<ExecuteFlowResponse>(`/api/flows/${id}/execute`, {
+    method: "POST",
+  });
+}
+
+export function getFlowExecutions(
+  id: string,
+  page: number,
+  pageSize: number,
+): Promise<PaginatedExecutions> {
+  return request<PaginatedExecutions>(
+    `/api/flows/${id}/executions?page=${page}&pageSize=${pageSize}`,
+    { method: "GET" },
+  );
+}
+
+export function previewFlowMessage(
+  id: string,
+  data: PreviewMessageRequest,
+): Promise<PreviewMessageResponse> {
+  return request<PreviewMessageResponse>(`/api/flows/${id}/preview`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function previewFlowFilter(
+  id: string,
+  data: PreviewFilterRequest,
+): Promise<PreviewFilterResponse> {
+  return request<PreviewFilterResponse>(`/api/flows/${id}/filters/preview`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function getFlowExecutionDetail(id: string): Promise<FlowExecutionDetail> {
+  return request<FlowExecutionDetail>(`/api/flow-executions/${id}`, { method: "GET" });
 }
