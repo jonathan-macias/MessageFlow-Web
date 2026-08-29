@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { getDatasets, getDatasetColumns, createFlow } from "@/lib/api";
 import { useAuth } from "@/lib/context/auth-context";
 import type { DatasetListItem, DatasetColumn } from "@/lib/types/dataset";
 import type { ScheduleRequest } from "@/lib/types/flow";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 const TIMEZONES = [
   "America/Bogota",
@@ -112,13 +112,11 @@ export default function NewFlowPage() {
   return (
     <div className="flex flex-1 bg-zinc-50 dark:bg-black">
       <div className="w-full max-w-2xl mx-auto py-10 px-4 space-y-6">
-        <div className="flex items-center gap-3">
-          <Link href="/flows" className="text-sm text-zinc-500 hover:underline">
-            Flows
-          </Link>
-          <span className="text-zinc-400">/</span>
-          <h1 className="text-2xl font-bold">Crear flow</h1>
-        </div>
+        <Breadcrumbs items={[
+          { label: "Flows", href: "/flows" },
+          { label: "Crear flow" },
+        ]} />
+        <h1 className="text-2xl font-bold">Crear flow</h1>
 
         {error && (
           <p className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 rounded p-2">

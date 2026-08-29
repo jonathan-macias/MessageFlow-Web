@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { uploadDataset } from "@/lib/api";
 import { useAuth } from "@/lib/context/auth-context";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 export default function UploadDatasetPage() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -47,13 +47,11 @@ export default function UploadDatasetPage() {
   return (
     <div className="flex flex-1 bg-zinc-50 dark:bg-black">
       <div className="w-full max-w-lg mx-auto py-10 px-4 space-y-6">
-        <div className="flex items-center gap-3">
-          <Link href="/datasets" className="text-sm text-zinc-500 hover:underline">
-            Datasets
-          </Link>
-          <span className="text-zinc-400">/</span>
-          <h1 className="text-2xl font-bold">Subir dataset</h1>
-        </div>
+        <Breadcrumbs items={[
+          { label: "Datasets", href: "/datasets" },
+          { label: "Subir dataset" },
+        ]} />
+        <h1 className="text-2xl font-bold">Subir dataset</h1>
 
         {error && (
           <p className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 rounded p-2">

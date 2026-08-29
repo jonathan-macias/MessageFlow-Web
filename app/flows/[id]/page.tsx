@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import {
   getFlow, getDatasetColumns, getFlowExecutions, getFlowExecutionDetail,
   updateFlow, updateFlowMessage, updateFlowFilter,
@@ -13,6 +12,7 @@ import { useAuth } from "@/lib/context/auth-context";
 import type { FlowDetail, FlowExecution, FlowExecutionDetail, FlowFilter } from "@/lib/types/flow";
 import type { DatasetColumn } from "@/lib/types/dataset";
 import { FlowStatus, ExecutionType, ExecutionStatus, TriggerSource, FilterOperator } from "@/lib/types/flow";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 type Tab = "info" | "message" | "filter" | "executions" | "preview";
 
@@ -274,9 +274,11 @@ export default function FlowDetailPage() {
     <div className="flex flex-1 bg-zinc-50 dark:bg-black">
       <div className="w-full max-w-4xl mx-auto py-10 px-4 space-y-6">
         {/* Header */}
+        <Breadcrumbs items={[
+          { label: "Flows", href: "/flows" },
+          { label: flow.name },
+        ]} />
         <div className="flex items-center gap-3">
-          <Link href="/flows" className="text-sm text-zinc-500 hover:underline">Flows</Link>
-          <span className="text-zinc-400">/</span>
           <h1 className="text-2xl font-bold">{flow.name}</h1>
           <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${
             flow.status === 2 ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"

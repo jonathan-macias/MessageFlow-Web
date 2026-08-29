@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { getDataset, getDatasetRows, getDatasetColumns } from "@/lib/api";
 import { useAuth } from "@/lib/context/auth-context";
 import type { DatasetDetail, DatasetColumn, PaginatedRows } from "@/lib/types/dataset";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 export default function DatasetDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -50,15 +50,13 @@ export default function DatasetDetailPage() {
   return (
     <div className="flex flex-1 bg-zinc-50 dark:bg-black">
       <div className="w-full max-w-5xl mx-auto py-10 px-4 space-y-6">
-        <div className="flex items-center gap-3">
-          <Link href="/datasets" className="text-sm text-zinc-500 hover:underline">
-            Datasets
-          </Link>
-          <span className="text-zinc-400">/</span>
-          <h1 className="text-2xl font-bold">
-            {isLoadingData ? "Cargando..." : dataset?.name}
-          </h1>
-        </div>
+        <Breadcrumbs items={[
+          { label: "Datasets", href: "/datasets" },
+          { label: isLoadingData ? "..." : dataset?.name ?? "..." },
+        ]} />
+        <h1 className="text-2xl font-bold">
+          {isLoadingData ? "Cargando..." : dataset?.name}
+        </h1>
 
         {error && (
           <p className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 rounded p-2">

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export default function Home() {
-  const { isAuthenticated, isLoading, logout, user } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -20,37 +20,32 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center bg-zinc-50 dark:bg-black">
-      <div className="text-center space-y-6">
-        <h1 className="text-2xl font-bold">Message Flow</h1>
-        <p className="text-zinc-600 dark:text-zinc-400">
-          Hola, {user?.email}
-        </p>
-
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Link
-            href="/datasets"
-            className="rounded bg-foreground px-5 py-2 text-sm font-medium text-background hover:opacity-90"
-          >
-            Datasets
-          </Link>
-          <Link
-            href="/flows"
-            className="rounded border border-black/10 dark:border-white/10 px-5 py-2 text-sm font-medium hover:bg-black/[.04] dark:hover:bg-[#1a1a1a]"
-          >
-            Flows
-          </Link>
+    <div className="flex flex-1 bg-zinc-50 dark:bg-black">
+      <div className="w-full max-w-4xl mx-auto py-10 px-4 space-y-8">
+        <div>
+          <h1 className="text-2xl font-bold">Hola, {user?.email?.split("@")[0]}</h1>
+          <p className="text-zinc-500 text-sm mt-1">Bienvenido a Message Flow</p>
         </div>
 
-        <button
-          onClick={() => {
-            logout();
-            router.replace("/login");
-          }}
-          className="text-sm text-zinc-500 hover:underline"
-        >
-          Cerrar sesion
-        </button>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Link
+            href="/datasets"
+            className="group rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-6 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors"
+          >
+            <div className="text-2xl mb-2"> Datasets</div>
+            <h2 className="font-semibold group-hover:underline">Gestionar datasets</h2>
+            <p className="text-sm text-zinc-500 mt-1">Subir, ver y administrar tus datasets.</p>
+          </Link>
+
+          <Link
+            href="/flows"
+            className="group rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-6 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors"
+          >
+            <div className="text-2xl mb-2">⚡</div>
+            <h2 className="font-semibold group-hover:underline">Gestionar flows</h2>
+            <p className="text-sm text-zinc-500 mt-1">Crear, configurar y ejecutar flows de mensajeria.</p>
+          </Link>
+        </div>
       </div>
     </div>
   );
