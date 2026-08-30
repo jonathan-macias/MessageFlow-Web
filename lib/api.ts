@@ -7,6 +7,7 @@ import type {
   PreviewMessageRequest, PreviewMessageResponse,
   PreviewFilterRequest, PreviewFilterResponse,
 } from "./types/flow";
+import type { GenerateMessageRequest, GenerateMessageResponse } from "./types/ai";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://localhost:7110";
 
@@ -239,4 +240,13 @@ export function previewFlowFilter(
 
 export function getFlowExecutionDetail(id: string): Promise<FlowExecutionDetail> {
   return request<FlowExecutionDetail>(`/api/flow-executions/${id}`, { method: "GET" });
+}
+
+// ── AI ────────────────────────────────────────────────
+
+export function generateMessage(data: GenerateMessageRequest): Promise<GenerateMessageResponse> {
+  return request<GenerateMessageResponse>("/api/ai/messages/generate", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }

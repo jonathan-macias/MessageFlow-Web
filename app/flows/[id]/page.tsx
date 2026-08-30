@@ -6,7 +6,7 @@ import {
   getFlow, getDatasetColumns, getFlowExecutions, getFlowExecutionDetail,
   updateFlow, updateFlowMessage, updateFlowFilter,
   activateFlow, pauseFlow, archiveFlow, executeFlow, deleteFlow,
-  previewFlowMessage, previewFlowFilter,
+  previewFlowMessage, previewFlowFilter, generateMessage,
 } from "@/lib/api";
 import { useAuth } from "@/lib/context/auth-context";
 import type { FlowDetail, FlowExecution, FlowExecutionDetail, FlowFilter, ScheduleRequest } from "@/lib/types/flow";
@@ -62,6 +62,11 @@ export default function FlowDetailPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const [aiDescription, setAiDescription] = useState("");
+  const [aiTone, setAiTone] = useState("friendly");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const loadFlow = useCallback(() => {
     if (!id) return Promise.resolve(null);
@@ -185,6 +190,30 @@ export default function FlowDetailPage() {
       setError(e.detail ?? "Error al guardar mensaje.");
     } finally {
       setActionLoading(null);
+    }
+  }
+
+  async function handleGenerateAI() {
+    if (!flow) return;
+    if (!aiDescription.trim()) {
+      setAiError("Escribe una descripcion del mensaje.");
+      return;
+    }
+    setIsGenerating(true);
+    setAiError(null);
+    try {
+      const result = await generateMessage({
+        description: aiDescription,
+        tone: aiTone,
+        datasetId: flow.datasetId,
+      });
+      setMessageText(result.messageTemplate);
+      msg("Mensaje generado con IA");
+    } catch (err) {
+      const e = err as { detail?: string };
+      setAiError(e.detail ?? "Error al generar el mensaje.");
+    } finally {
+      setIsGenerating(false);
     }
   }
 
@@ -502,6 +531,51 @@ export default function FlowDetailPage() {
                 </div>
               </div>
             )}
+
+            {/* AI Generator */}
+            <div className="rounded border border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-950/20 p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold">Generar con IA</span>
+                <span className="text-xs text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 rounded px-1.5 py-0.5">beta</span>
+              </div>
+              <p className="text-xs text-zinc-500">
+                Describe el mensaje que quieres y la IA lo genera usando las columnas del dataset.
+              </p>
+              <textarea
+                rows={2}
+                value={aiDescription}
+                onChange={(e) => setAiDescription(e.target.value)}
+                placeholder="Ej: Un recordatorio amigable de que la factura vence manana."
+                className="w-full rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-400"
+              />
+              <div className="flex items-end gap-3">
+                <div className="flex-1">
+                  <label className="block text-xs text-zinc-500 mb-1">Tono</label>
+                  <select
+                    value={aiTone}
+                    onChange={(e) => setAiTone(e.target.value)}
+                    className="w-full rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-400"
+                  >
+                    <option value="friendly">Amigable</option>
+                    <option value="professional">Profesional</option>
+                    <option value="formal">Formal</option>
+                    <option value="casual">Casual</option>
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleGenerateAI}
+                  disabled={isGenerating}
+                  className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                >
+                  {isGenerating ? "Generando..." : "Generar"}
+                </button>
+              </div>
+              {aiError && (
+                <p className="text-xs text-red-600">{aiError}</p>
+              )}
+            </div>
+
             <textarea
               rows={5}
               value={messageText}
