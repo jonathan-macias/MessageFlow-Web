@@ -39,12 +39,8 @@ export interface ScheduleDetail {
   type: number;
   timeZone: string;
   runAtUtc: string | null;
-  recurrence: RecurrenceDetail | null;
-}
-
-export interface RecurrenceDetail {
-  timeOfDay: string;
-  intervalDays: number;
+  recurrenceTimeOfDay: string | null;
+  recurrenceIntervalDays: number | null;
 }
 
 // ── Create / Update ───────────────────────────────────
@@ -73,6 +69,7 @@ export interface CreateFlowResponse {
 export interface UpdateFlowRequest {
   name: string;
   description: string;
+  schedule?: ScheduleRequest;
 }
 
 export interface UpdateMessageRequest {

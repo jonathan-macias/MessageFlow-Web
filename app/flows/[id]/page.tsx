@@ -9,12 +9,22 @@ import {
   previewFlowMessage, previewFlowFilter,
 } from "@/lib/api";
 import { useAuth } from "@/lib/context/auth-context";
-import type { FlowDetail, FlowExecution, FlowExecutionDetail, FlowFilter } from "@/lib/types/flow";
+import type { FlowDetail, FlowExecution, FlowExecutionDetail, FlowFilter, ScheduleRequest } from "@/lib/types/flow";
 import type { DatasetColumn } from "@/lib/types/dataset";
-import { FlowStatus, ExecutionType, ExecutionStatus, TriggerSource, FilterOperator } from "@/lib/types/flow";
+import { FlowStatus, ExecutionType, ExecutionStatus, ChannelType, TriggerSource, FilterOperator } from "@/lib/types/flow";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 
 type Tab = "info" | "message" | "filter" | "executions" | "preview";
+
+const TIMEZONES = [
+  "America/Bogota",
+  "America/Lima",
+  "America/Mexico_City",
+  "America/New_York",
+  "America/Los_Angeles",
+  "Europe/Madrid",
+  "UTC",
+];
 
 export default function FlowDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +43,11 @@ export default function FlowDetailPage() {
 
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
+  const [editScheduleType, setEditScheduleType] = useState(4);
+  const [editTimeZone, setEditTimeZone] = useState("America/Bogota");
+  const [editRunAtUtc, setEditRunAtUtc] = useState("");
+  const [editRecTimeOfDay, setEditRecTimeOfDay] = useState("");
+  const [editRecIntervalDays, setEditRecIntervalDays] = useState("");
   const [messageText, setMessageText] = useState("");
   const [filterText, setFilterText] = useState("");
 
@@ -54,6 +69,11 @@ export default function FlowDetailPage() {
       setFlow(f);
       setEditName(f.name);
       setEditDesc(f.description);
+      setEditScheduleType(f.schedule.type);
+      setEditTimeZone(f.schedule.timeZone);
+      setEditRunAtUtc(f.schedule.runAtUtc ? f.schedule.runAtUtc.slice(0, 16) : "");
+      setEditRecTimeOfDay(f.schedule.recurrenceTimeOfDay ?? "");
+      setEditRecIntervalDays(f.schedule.recurrenceIntervalDays?.toString() ?? "");
       setMessageText(f.messageTemplateText);
       if (f.rootFilter) {
         setFilterText(JSON.stringify(f.rootFilter, null, 2));
@@ -131,7 +151,18 @@ export default function FlowDetailPage() {
     setActionLoading("guardar");
     setError(null);
     try {
-      await updateFlow(id, { name: editName, description: editDesc });
+      const schedule: ScheduleRequest = {
+        type: editScheduleType,
+        timeZone: editTimeZone,
+      };
+      if (editScheduleType === 1 && editRunAtUtc) {
+        schedule.runAtUtc = new Date(editRunAtUtc).toISOString();
+      }
+      if (editScheduleType === 2) {
+        if (editRecTimeOfDay) schedule.recurrenceTimeOfDay = editRecTimeOfDay;
+        if (editRecIntervalDays) schedule.recurrenceIntervalDays = Number(editRecIntervalDays);
+      }
+      await updateFlow(id, { name: editName, description: editDesc, schedule });
       await loadFlow();
       msg("Informacion actualizada");
     } catch (err) {
@@ -256,7 +287,7 @@ export default function FlowDetailPage() {
     );
   }
 
-  const canActivate = flow.status === 1;
+  const canActivate = flow.status === 1 || flow.status === 3;
   const canPause = flow.status === 2;
   const canArchive = flow.status === 2 || flow.status === 3 || flow.status === 4;
   const canDelete = flow.status === 1 || flow.status === 5;
@@ -347,18 +378,10 @@ export default function FlowDetailPage() {
         {/* Tab: Info */}
         {activeTab === "info" && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+            <div className="grid grid-cols-2 gap-4 text-sm">
               <div className="rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-3">
                 <p className="text-zinc-500">Canal</p>
-                <p className="font-medium">{ExecutionType[flow.channel] ?? flow.channel}</p>
-              </div>
-              <div className="rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-3">
-                <p className="text-zinc-500">Tipo ejecucion</p>
-                <p className="font-medium">{ExecutionType[flow.schedule.type] ?? flow.schedule.type}</p>
-              </div>
-              <div className="rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-3">
-                <p className="text-zinc-500">Zona horaria</p>
-                <p className="font-medium">{flow.schedule.timeZone}</p>
+                <p className="font-medium">{ChannelType[flow.channel] ?? flow.channel}</p>
               </div>
               <div className="rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-3">
                 <p className="text-zinc-500">Creado</p>
@@ -367,7 +390,7 @@ export default function FlowDetailPage() {
             </div>
 
             <div className="rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 space-y-3">
-              <h3 className="text-sm font-semibold">Editar nombre y descripcion</h3>
+              <h3 className="text-sm font-semibold">Nombre y descripcion</h3>
               <input
                 type="text"
                 value={editName}
@@ -380,6 +403,74 @@ export default function FlowDetailPage() {
                 onChange={(e) => setEditDesc(e.target.value)}
                 className="w-full rounded border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
               />
+            </div>
+
+            <div className="rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 space-y-3">
+              <h3 className="text-sm font-semibold">Programacion</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-zinc-500 mb-1">Tipo de ejecucion</label>
+                  <select
+                    value={editScheduleType}
+                    onChange={(e) => setEditScheduleType(Number(e.target.value))}
+                    className="w-full rounded border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
+                  >
+                    <option value={1}>OneTime</option>
+                    <option value={2}>Recurring</option>
+                    <option value={3}>DataTriggered</option>
+                    <option value={4}>Immediate</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-zinc-500 mb-1">Zona horaria</label>
+                  <select
+                    value={editTimeZone}
+                    onChange={(e) => setEditTimeZone(e.target.value)}
+                    className="w-full rounded border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
+                  >
+                    {TIMEZONES.map((tz) => (
+                      <option key={tz} value={tz}>{tz}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {editScheduleType === 1 && (
+                <div>
+                  <label className="block text-xs text-zinc-500 mb-1">Fecha y hora de ejecucion</label>
+                  <input
+                    type="datetime-local"
+                    value={editRunAtUtc}
+                    onChange={(e) => setEditRunAtUtc(e.target.value)}
+                    className="w-full rounded border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
+                  />
+                </div>
+              )}
+
+              {editScheduleType === 2 && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs text-zinc-500 mb-1">Hora del dia</label>
+                    <input
+                      type="time"
+                      value={editRecTimeOfDay}
+                      onChange={(e) => setEditRecTimeOfDay(e.target.value)}
+                      className="w-full rounded border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-zinc-500 mb-1">Intervalo (dias)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={editRecIntervalDays}
+                      onChange={(e) => setEditRecIntervalDays(e.target.value)}
+                      className="w-full rounded border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
+                    />
+                  </div>
+                </div>
+              )}
+
               <button
                 onClick={handleSaveInfo}
                 disabled={actionLoading === "guardar"}
