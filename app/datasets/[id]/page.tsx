@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { getDataset, getDatasetRows, getDatasetColumns } from "@/lib/api";
 import { useAuth } from "@/lib/context/auth-context";
 import type { DatasetDetail, DatasetColumn, PaginatedRows } from "@/lib/types/dataset";
@@ -54,9 +55,19 @@ export default function DatasetDetailPage() {
           { label: "Datasets", href: "/datasets" },
           { label: isLoadingData ? "..." : dataset?.name ?? "..." },
         ]} />
-        <h1 className="text-2xl font-bold">
-          {isLoadingData ? "Cargando..." : dataset?.name}
-        </h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">
+            {isLoadingData ? "Cargando..." : dataset?.name}
+          </h1>
+          {dataset && (
+            <Link
+              href={`/datasets/${id}/query`}
+              className="rounded-full bg-blue-600 text-white px-3 py-1 text-xs font-medium hover:bg-blue-700 transition-colors"
+            >
+              Preguntar con IA
+            </Link>
+          )}
+        </div>
 
         {error && (
           <p className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 rounded p-2">
