@@ -60,12 +60,20 @@ export default function DatasetDetailPage() {
             {isLoadingData ? "Cargando..." : dataset?.name}
           </h1>
           {dataset && (
-            <Link
-              href={`/datasets/${id}/query`}
-              className="rounded-full bg-blue-600 text-white px-3 py-1 text-xs font-medium hover:bg-blue-700 transition-colors"
-            >
-              Preguntar con IA
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/datasets/${id}/query`}
+                className="rounded-full bg-blue-600 text-white px-3 py-1 text-xs font-medium hover:bg-blue-700 transition-colors"
+              >
+                Preguntar con IA
+              </Link>
+              <Link
+                href={`/datasets/${id}/semantic-search`}
+                className="rounded-full border border-black/10 dark:border-white/10 px-3 py-1 text-xs font-medium hover:bg-black/[.04] dark:hover:bg-white/[.06] transition-colors"
+              >
+                Búsqueda semántica
+              </Link>
+            </div>
           )}
         </div>
 

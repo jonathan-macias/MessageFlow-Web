@@ -7,7 +7,14 @@ import type {
   PreviewMessageRequest, PreviewMessageResponse,
   PreviewFilterRequest, PreviewFilterResponse,
 } from "./types/flow";
-import type { GenerateMessageRequest, GenerateMessageResponse, DatasetQueryRequest, DatasetQueryResponse } from "./types/ai";
+import type {
+  GenerateMessageRequest,
+  GenerateMessageResponse,
+  DatasetQueryRequest,
+  DatasetQueryResponse,
+  SemanticSearchRequest,
+  SemanticSearchResponse,
+} from "./types/ai";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://localhost:7110";
 
@@ -49,7 +56,7 @@ async function request<T>(path: string, options: RequestInit): Promise<T> {
       status: res.status,
       detail: res.statusText,
     };
-    throw error;
+    throw { ...error, httpStatus: res.status };
   }
 
   if (res.status === 204 || res.headers.get("content-length") === "0") {
@@ -73,7 +80,7 @@ async function requestVoid(path: string, options: RequestInit): Promise<void> {
       status: res.status,
       detail: res.statusText,
     };
-    throw error;
+    throw { ...error, httpStatus: res.status };
   }
 }
 
@@ -253,6 +260,13 @@ export function generateMessage(data: GenerateMessageRequest): Promise<GenerateM
 
 export function queryDataset(data: DatasetQueryRequest): Promise<DatasetQueryResponse> {
   return request<DatasetQueryResponse>("/api/ai/datasets/query", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function semanticSearch(data: SemanticSearchRequest): Promise<SemanticSearchResponse> {
+  return request<SemanticSearchResponse>("/api/ai/datasets/semantic-search", {
     method: "POST",
     body: JSON.stringify(data),
   });

@@ -25,4 +25,7 @@ export interface Rfc7807Error {
   title: string;
   status: number;
   detail: string;
+  code?: string;
+  errors?: Record<string, string[]>;
+  httpStatus?: number;
 }
