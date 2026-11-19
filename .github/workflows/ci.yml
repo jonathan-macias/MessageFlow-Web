@@ -31,8 +31,10 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Tipos (tsc)
-        run: npx tsc --noEmit
+      # `next typegen` genera los tipos globales de rutas (LayoutProps, PageProps…)
+      # en .next/types; sin ellos tsc falla en un checkout limpio.
+      - name: Tipos (typegen + tsc)
+        run: npm run typecheck
 
       - name: Tests (vitest)
         run: npm test
