@@ -1,0 +1,7 @@
+# Scripts y YAML con finales de línea LF aunque se editen en Windows
+# (bash en la Orange Pi falla con CRLF).
+*.sh       text eol=lf
+*.yml      text eol=lf
+*.yaml     text eol=lf
+Dockerfile text eol=lf
+.env*      text eol=lf

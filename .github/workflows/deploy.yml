@@ -1,0 +1,119 @@
+name: Deploy PROD
+
+# Cada push a la rama PROD (normalmente el merge de un PR main → PROD):
+#   1. tests        (reutiliza ci.yml en GitHub)
+#   2. build        (imagen ARM64 nativa en ubuntu-24.04-arm → GHCR)
+#   3. deploy       (runner self-hosted en la Orange Pi → deploy/deploy.sh)
+#
+# Las NEXT_PUBLIC_* se incrustan en el build: salen de Settings → Secrets and
+# variables → Actions → Variables (NEXT_PUBLIC_API_BASE_URL, NEXT_PUBLIC_GOOGLE_CLIENT_ID).
+#
+# Rollback manual: Actions → Deploy PROD → Run workflow (rama PROD) con image_tag
+# de una versión anterior (p. ej. sha-abc1234). Se salta tests y build.
+on:
+  push:
+    branches: [PROD]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Tag ya publicado a desplegar (ej. sha-abc1234). Vacío = construir y desplegar el commit actual de PROD"
+        required: false
+        default: ""
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  WEB_IMAGE: ghcr.io/${{ github.repository_owner }}/messageflow-web
+
+jobs:
+  test:
+    if: github.ref == 'refs/heads/PROD' && !inputs.image_tag
+    uses: ./.github/workflows/ci.yml
+
+  build:
+    name: Build ARM64 → GHCR
+    needs: test
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Comprobar variables NEXT_PUBLIC_*
+        env:
+          API_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL }}
+        run: |
+          [ -n "$API_URL" ] || { echo "::error::Falta la variable NEXT_PUBLIC_API_BASE_URL en el repo"; exit 1; }
+
+      - name: Calcular tag
+        id: tag
+        run: echo "tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push web
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_BASE_URL=${{ vars.NEXT_PUBLIC_API_BASE_URL }}
+            NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ vars.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
+          tags: |
+            ${{ env.WEB_IMAGE }}:${{ steps.tag.outputs.tag }}
+            ${{ env.WEB_IMAGE }}:prod
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=arm64
+          cache-to: type=gha,scope=arm64,mode=max
+
+  deploy:
+    name: Deploy en Orange Pi
+    needs: build
+    # Corre tras un build correcto, o directamente si es un rollback (build saltado).
+    # Nunca fuera de la rama PROD.
+    if: >-
+      always() && github.ref == 'refs/heads/PROD' &&
+      (needs.build.result == 'success' || (inputs.image_tag && needs.build.result == 'skipped'))
+    runs-on: [self-hosted, linux, ARM64, messageflow-web-prod]
+    timeout-minutes: 10
+    environment:
+      name: production
+      url: ${{ vars.PUBLIC_URL }}
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Desplegar
+        env:
+          IMAGE_TAG: ${{ inputs.image_tag || needs.build.outputs.tag }}
+          IMAGE_NAMESPACE: ghcr.io/${{ github.repository_owner }}
+        run: |
+          grep -q '^IMAGE_NAMESPACE=' /opt/messageflow-web/.env \
+            || printf '\nIMAGE_NAMESPACE=%s\n' "$IMAGE_NAMESPACE" >> /opt/messageflow-web/.env
+          bash deploy/deploy.sh "$IMAGE_TAG"

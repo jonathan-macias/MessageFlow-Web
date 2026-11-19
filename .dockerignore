@@ -1,0 +1,23 @@
+# Nada de dependencias ni builds locales: se generan dentro de la imagen
+node_modules
+.next
+out
+build
+coverage
+*.tsbuildinfo
+
+# Secretos y config local (los NEXT_PUBLIC_* llegan como --build-arg)
+.env*
+
+# No necesarios para construir
+.git
+.github
+deploy
+tests
+vitest.config.ts
+vitest.setup.ts
+README.md
+AGENTS.md
+CLAUDE.md
+Dockerfile
+.dockerignore
