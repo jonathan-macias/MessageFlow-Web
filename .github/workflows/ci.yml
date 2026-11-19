@@ -1,0 +1,62 @@
+name: CI
+
+# Lint, tipos, tests y build en cada PR hacia main o PROD y en cada push a main.
+# deploy.yml lo reutiliza (workflow_call) antes de construir la imagen de producción.
+on:
+  pull_request:
+    branches: [main, PROD]
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: Lint, Test & Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci --no-audit --no-fund
+
+      - name: Lint
+        run: npm run lint
+
+      # `next typegen` genera los tipos globales de rutas (LayoutProps, PageProps…)
+      # en .next/types; sin ellos tsc falla en un checkout limpio.
+      - name: Tipos (typegen + tsc)
+        run: npm run typecheck
+
+      - name: Tests (vitest)
+        run: npm test
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+
+  docker-build:
+    name: Docker build (validación)
+    # Solo en PRs: comprueba que el Dockerfile sigue compilando antes de llegar a PROD.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - name: Build web (sin publicar)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          cache-from: type=gha,scope=pr
+          cache-to: type=gha,scope=pr,mode=max
