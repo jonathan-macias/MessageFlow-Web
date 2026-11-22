@@ -101,10 +101,11 @@ export function formatSimilarity(similarity: number): string {
   return `${percent}%`;
 }
 
-export function similarityTone(similarity: number): string {
-  if (similarity >= 0.85) return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200";
-  if (similarity >= 0.6) return "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200";
-  return "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300";
+/** Tono del <Badge> de relevancia: alta = ok, media = warn, baja = neutral. */
+export function similarityTone(similarity: number): "ok" | "warn" | "neutral" {
+  if (similarity >= 0.85) return "ok";
+  if (similarity >= 0.6) return "warn";
+  return "neutral";
 }
 
 const numberFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });

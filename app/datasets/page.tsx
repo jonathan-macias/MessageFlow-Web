@@ -6,6 +6,13 @@ import { useRouter } from "next/navigation";
 import { getDatasets } from "@/lib/api";
 import { useAuth } from "@/lib/context/auth-context";
 import type { DatasetListItem } from "@/lib/types/dataset";
+import { PageHeader, PageShell } from "@/components/ui/page-shell";
+import { buttonClass } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Spinner } from "@/components/ui/spinner";
+import { IconArrowRight, IconDatabase, IconUpload } from "@/components/ui/icons";
 
 export default function DatasetsPage() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -30,43 +37,58 @@ export default function DatasetsPage() {
 
   if (isLoading || !isAuthenticated) return null;
 
+  const uploadLink = (
+    <Link href="/datasets/upload" className={buttonClass("primary")}>
+      <IconUpload className="size-4" aria-hidden="true" />
+      Upload dataset
+    </Link>
+  );
+
   return (
-    <div className="flex flex-1 bg-zinc-50 dark:bg-black">
-      <div className="w-full max-w-4xl mx-auto py-10 px-4 space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Datasets</h1>
-          <Link
-            href="/datasets/upload"
-            className="rounded bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"
-          >
-            Upload dataset
-          </Link>
+    <PageShell width="4xl">
+      <PageHeader title="Datasets" actions={datasets.length > 0 ? uploadLink : undefined} />
+
+      {error && <Alert tone="error">{error}</Alert>}
+
+      {isLoadingData ? (
+        <div role="status" aria-busy="true" className="flex items-center gap-2 text-sm text-muted">
+          <Spinner />
+          Loading...
         </div>
-
-        {error && (
-          <p className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 rounded p-2">
-            {error}
-          </p>
-        )}
-
-        {isLoadingData ? (
-          <p className="text-zinc-500">Loading...</p>
-        ) : datasets.length === 0 ? (
-          <p className="text-zinc-500">No datasets yet.</p>
-        ) : (
-          <div className="space-y-2">
-            {datasets.map((ds) => (
-              <Link
-                key={ds.id}
-                href={`/datasets/${ds.id}`}
-                className="block rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors"
+      ) : datasets.length === 0 ? (
+        <EmptyState
+          icon={<IconDatabase className="size-5" aria-hidden="true" />}
+          title="No datasets yet."
+          description="Upload an Excel or CSV file to start querying and messaging your contacts."
+          action={uploadLink}
+        />
+      ) : (
+        <ul className="space-y-2">
+          {datasets.map((ds) => (
+            <li key={ds.id}>
+              <Card
+                interactive
+                className="flex cursor-pointer items-center justify-between gap-3"
+                onClick={() => router.push(`/datasets/${ds.id}`)}
               >
-                <span className="font-medium">{ds.name}</span>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent">
+                    <IconDatabase className="size-4" aria-hidden="true" />
+                  </span>
+                  <Link
+                    href={`/datasets/${ds.id}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="truncate text-sm font-medium text-fg hover:text-accent"
+                  >
+                    {ds.name}
+                  </Link>
+                </div>
+                <IconArrowRight className="size-4 shrink-0 text-subtle" aria-hidden="true" />
+              </Card>
+            </li>
+          ))}
+        </ul>
+      )}
+    </PageShell>
   );
 }
