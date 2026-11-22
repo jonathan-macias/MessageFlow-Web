@@ -1,6 +1,9 @@
 "use client";
 
 import type { DatasetColumn } from "@/lib/types/dataset";
+import { Button } from "@/components/ui/button";
+import { Field, Input, Select } from "@/components/ui/field";
+import { IconPlus } from "@/components/ui/icons";
 import {
   ColumnDataType,
   dataTypeLabel,
@@ -25,50 +28,54 @@ interface FilterBuilderProps {
   onChange: (drafts: FilterDraft[]) => void;
 }
 
-const inputClass =
-  "w-full rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 px-2.5 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-50";
-
 function ValueInput({
   draft,
   column,
   disabled,
   onChange,
+  id,
+  "aria-describedby": describedBy,
+  "aria-invalid": invalid,
 }: {
   draft: FilterDraft;
   column: DatasetColumn;
   disabled: boolean;
   onChange: (value: string) => void;
+  /** Los recibe del <Field> que lo envuelve. */
+  id?: string;
+  "aria-describedby"?: string;
+  "aria-invalid"?: boolean;
 }) {
   const common = {
-    id: `filter-value-${draft.id}`,
+    id: id ?? `filter-value-${draft.id}`,
     value: draft.value,
     disabled,
-    onChange: (
-      event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-    ) => onChange(event.target.value),
-    className: inputClass,
-    "aria-label": `Valor del filtro sobre ${column.name}`,
+    "aria-describedby": describedBy,
+    "aria-invalid": invalid,
+    "aria-label": `Filter value for ${column.name}`,
   };
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    onChange(event.target.value);
 
   if (column.dataType === ColumnDataType.Boolean) {
     return (
-      <select {...common}>
-        <option value="">Selecciona...</option>
-        <option value="true">Sí</option>
+      <Select {...common} onChange={handleChange}>
+        <option value="">Select...</option>
+        <option value="true">Yes</option>
         <option value="false">No</option>
-      </select>
+      </Select>
     );
   }
 
   if (column.dataType === ColumnDataType.Number) {
-    return <input {...common} type="number" inputMode="decimal" step="any" />;
+    return <Input {...common} onChange={handleChange} type="number" inputMode="decimal" step="any" />;
   }
 
   if (column.dataType === ColumnDataType.Date) {
-    return <input {...common} type="date" />;
+    return <Input {...common} onChange={handleChange} type="date" />;
   }
 
-  return <input {...common} type="text" />;
+  return <Input {...common} onChange={handleChange} type="text" />;
 }
 
 export function FilterBuilder({
@@ -99,15 +106,15 @@ export function FilterBuilder({
 
   return (
     <fieldset className="space-y-2" disabled={disabled}>
-      <legend className="text-sm font-medium mb-1">Filtros (opcional)</legend>
-      <p className="text-xs text-zinc-500 mb-2">
-        Acotan las filas que se buscan, pero no el orden: la relevancia la decide el
-        significado del texto. Se combinan con Y, hasta {MAX_FILTERS}.
+      <legend className="text-sm font-medium text-fg mb-1">Filters (optional)</legend>
+      <p className="text-xs text-subtle mb-2">
+        They narrow down which rows are searched, but not the order: relevance is decided
+        by the meaning of the text. Filters are combined with AND, up to {MAX_FILTERS}.
       </p>
 
       {drafts.length === 0 && (
-        <p className="text-xs text-zinc-400 border border-dashed border-black/10 dark:border-white/10 rounded-lg p-3">
-          Sin filtros: se buscan filas en todo el dataset.
+        <p className="text-xs text-subtle border border-dashed border-line rounded-lg p-3">
+          No filters: rows are searched across the whole dataset.
         </p>
       )}
 
@@ -119,86 +126,79 @@ export function FilterBuilder({
         const error = errors[draft.id];
 
         return (
-          <div
-            key={draft.id}
-            className="rounded-lg border border-black/10 dark:border-white/10 p-3 space-y-2"
-          >
+          <div key={draft.id} className="rounded-lg border border-line bg-raised/40 p-3 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-zinc-500">
-                Filtro {index + 1}
+              <span className="text-xs font-medium text-muted">
+                Filter {index + 1}
                 {column ? ` · ${dataTypeLabel(column.dataType)}` : ""}
               </span>
               <button
                 type="button"
                 onClick={() => onChange(drafts.filter((item) => item.id !== draft.id))}
-                className="text-xs text-zinc-500 hover:text-red-600 transition-colors"
+                className="rounded-md px-1.5 py-0.5 text-xs text-muted hover:bg-raised hover:text-bad-fg transition-colors"
               >
-                Quitar
+                Remove
               </button>
             </div>
 
             <div className="grid gap-2 sm:grid-cols-2">
-              <label className="text-xs space-y-1">
-                <span className="text-zinc-500">Columna</span>
-                <select
+              <Field label="Column" labelSize="sm">
+                <Select
                   value={draft.column}
                   onChange={(event) => selectColumn(draft, event.target.value)}
-                  className={inputClass}
-                  aria-label={`Columna del filtro ${index + 1}`}
+                  aria-label={`Column of filter ${index + 1}`}
                 >
-                  <option value="">Selecciona...</option>
+                  <option value="">Select...</option>
                   {columns.map((item) => (
                     <option key={item.id} value={item.name}>
                       {item.name} ({dataTypeLabel(item.dataType)})
                     </option>
                   ))}
-                </select>
-              </label>
+                </Select>
+              </Field>
 
-              <label className="text-xs space-y-1">
-                <span className="text-zinc-500">Operador</span>
-                <select
+              <Field label="Operator" labelSize="sm">
+                <Select
                   value={draft.operator}
                   onChange={(event) => selectOperator(draft, event.target.value as DraftOperator)}
                   disabled={!column}
-                  className={inputClass}
-                  aria-label={`Operador del filtro ${index + 1}`}
+                  aria-label={`Operator of filter ${index + 1}`}
                 >
-                  <option value="">Selecciona...</option>
+                  <option value="">Select...</option>
                   {operators.map((operator) => (
                     <option key={operator} value={operator}>
                       {operatorLabel(operator)}
                     </option>
                   ))}
-                </select>
-              </label>
+                </Select>
+              </Field>
             </div>
 
             {showValue && column && (
-              <label className="text-xs space-y-1 block">
-                <span className="text-zinc-500">Valor</span>
+              <Field label="Value" labelSize="sm">
                 <ValueInput
                   draft={draft}
                   column={column}
                   disabled={disabled}
                   onChange={(value) => update(draft.id, { value })}
                 />
-              </label>
+              </Field>
             )}
 
-            {error && <p className="text-xs text-red-600">{error}</p>}
+            {error && <p className="text-xs text-bad-fg">{error}</p>}
           </div>
         );
       })}
 
-      <button
-        type="button"
+      <Button
+        variant="secondary"
+        size="sm"
         onClick={() => onChange([...drafts, newFilterDraft()])}
         disabled={isFull}
-        className="rounded-full border border-black/10 dark:border-white/10 px-3 py-1.5 text-xs hover:bg-black/[.04] dark:hover:bg-white/[.06] disabled:opacity-50 transition-colors"
       >
-        {isFull ? `Máximo ${MAX_FILTERS} filtros` : "Agregar filtro"}
-      </button>
+        {!isFull && <IconPlus className="size-3.5" />}
+        {isFull ? `Maximum ${MAX_FILTERS} filters` : "Add filter"}
+      </Button>
     </fieldset>
   );
 }

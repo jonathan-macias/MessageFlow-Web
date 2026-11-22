@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { getDataset, getDatasetColumns } from "@/lib/api";
@@ -8,6 +8,14 @@ import { useAuth } from "@/lib/context/auth-context";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { FilterBuilder } from "@/components/semantic-search/filter-builder";
 import { ResultPanel } from "@/components/semantic-search/result-panel";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Field, Select, Textarea } from "@/components/ui/field";
+import { IconAlertTriangle, IconSearch } from "@/components/ui/icons";
+import { PageHeader, PageShell } from "@/components/ui/page-shell";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/cn";
 import { hasTextColumns } from "@/lib/semantic-search/columns";
 import {
   DEFAULT_TOP_K,
@@ -28,12 +36,47 @@ const MAX_POLL_ATTEMPTS = 20;
 const TOP_K_OPTIONS = [5, 10, 20, 50];
 
 const INDEXING_COPY: Record<SemanticIndexingStatus, string> = {
-  Pending: "Este dataset está en cola para indexarse.",
-  Indexing: "Este dataset se está indexando ahora mismo.",
-  Failed: "La indexación anterior no terminó. Se reintentará al buscar de nuevo.",
+  Pending: "This dataset is queued for indexing.",
+  Indexing: "This dataset is being indexed right now.",
+  Failed: "The previous indexing run did not finish. It will be retried the next time you search.",
 };
 
-type LoadState = "loading" | "ready" | "not-found" | "error";
+const TEXT_LINK =
+  "inline-block text-xs text-accent underline underline-offset-4 hover:text-accent-hover transition-colors";
+
+const NOTICE_TONES = {
+  info: "border-info-line bg-info-bg text-info-fg",
+  warning: "border-warn-line bg-warn-bg text-warn-fg",
+} as const;
+
+/**
+ * Aviso con la apariencia de <Alert> pero anunciado de forma cortés (aria-live="polite"): estados
+ * informativos o recuperables que no deben interrumpir al lector de pantalla como un role="alert".
+ */
+function LiveNotice({
+  tone,
+  icon,
+  action,
+  children,
+}: {
+  tone: keyof typeof NOTICE_TONES;
+  icon: ReactNode;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section
+      aria-live="polite"
+      className={cn("flex items-start gap-2.5 rounded-xl border p-4 text-sm", NOTICE_TONES[tone])}
+    >
+      {icon}
+      <div className="min-w-0 flex-1">{children}</div>
+      {action && <div className="shrink-0">{action}</div>}
+    </section>
+  );
+}
+
+type LoadState ="loading" | "ready" | "not-found" | "error";
 
 interface IndexingState {
   attempt: number;
@@ -57,7 +100,7 @@ function mergeServerFieldErrors(
   const known = new Set(["question", "topK", "filters"]);
 
   for (const [field, messages] of Object.entries(fieldErrors)) {
-    const message = messages[0] ?? "Valor inválido.";
+    const message = messages[0] ?? "Invalid value.";
 
     if (field.toLowerCase() === "question") {
       result.question = message;
@@ -283,271 +326,241 @@ export default function SemanticSearchPage() {
   };
 
   return (
-    <div className="flex flex-1 bg-zinc-50 dark:bg-black flex-col">
-      <div className="w-full max-w-4xl mx-auto py-6 px-4 space-y-6">
-        <Breadcrumbs
-          items={[
-            { label: "Datasets", href: "/datasets" },
-            { label: datasetName || "...", href: `/datasets/${id}` },
-            { label: "Búsqueda semántica" },
-          ]}
-        />
+    <PageShell width="4xl" className="py-6 space-y-6">
+      <Breadcrumbs
+        items={[
+          { label: "Datasets", href: "/datasets" },
+          { label: datasetName || "...", href: `/datasets/${id}` },
+          { label: "Semantic search" },
+        ]}
+      />
 
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold">Búsqueda semántica</h1>
-          <p className="text-sm text-zinc-500">
-            Encuentra las filas de{" "}
-            <strong>{notFound || loadState === "loading" ? "este dataset" : datasetName}</strong> que
-            se parecen en significado a tu pregunta.
-          </p>
-        </div>
-
-        {notFound && (
-          <div className="rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 space-y-2">
-            <p className="text-sm font-medium">No encontramos este dataset.</p>
-            <p className="text-xs text-zinc-500">
-              Puede que ya no exista o que el enlace no sea correcto.
-            </p>
-            <Link
-              href="/datasets"
-              className="inline-block text-xs underline underline-offset-4 hover:text-foreground transition-colors"
-            >
-              Volver a mis datasets
-            </Link>
-          </div>
-        )}
-
-        {loadState === "error" && (
-          <div className="rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 space-y-2">
-            <p className="text-sm font-medium">No pudimos cargar este dataset.</p>
-            <p className="text-xs text-zinc-500">Revisa tu conexión e inténtalo de nuevo.</p>
-          </div>
-        )}
-
-        {unavailable && (
-          <div className="rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 space-y-2">
-            <p className="text-sm font-medium">La búsqueda semántica no está disponible.</p>
-            <p className="text-xs text-zinc-500">
-              {problem.detail || "Esta función está deshabilitada en el servidor por ahora."} Para
-              meantime puedes usar la{" "}
-              <Link
-                href={`/datasets/${id}/query`}
-                className="underline underline-offset-4 hover:text-foreground transition-colors"
-              >
-                consulta estructurada
-              </Link>
-              , que responde preguntas de agregación, conteos y filtros.
-            </p>
-          </div>
-        )}
-
-        {canSearchSemantically && !unavailable && (
+      <PageHeader
+        title="Semantic search"
+        description={
           <>
-            <form
-              onSubmit={handleSubmit}
-              className="rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 space-y-4"
-            >
-              <div className="space-y-1">
-                <label htmlFor="semantic-question" className="text-sm font-medium block">
-                  ¿Qué estás buscando?
-                </label>
-                <textarea
+            Find the rows of{" "}
+            <strong className="font-semibold text-fg">
+              {notFound || loadState === "loading" ? "this dataset" : datasetName}
+            </strong>{" "}
+            that are closest in meaning to your question.
+          </>
+        }
+      />
+
+      {notFound && (
+        <Card className="space-y-2">
+          <p className="text-sm font-medium text-fg">We could not find this dataset.</p>
+          <p className="text-xs text-muted">It may no longer exist, or the link may be incorrect.</p>
+          <Link href="/datasets" className={TEXT_LINK}>
+            Back to my datasets
+          </Link>
+        </Card>
+      )}
+
+      {loadState === "error" && (
+        <Card className="space-y-2">
+          <p className="text-sm font-medium text-fg">We could not load this dataset.</p>
+          <p className="text-xs text-muted">Check your connection and try again.</p>
+        </Card>
+      )}
+
+      {unavailable && (
+        <Card className="space-y-2">
+          <p className="text-sm font-medium text-fg">Semantic search is not available.</p>
+          <p className="text-xs text-muted">
+            {problem.detail || "This feature is currently disabled on the server."} In the
+            meantime you can use the{" "}
+            <Link href={`/datasets/${id}/query`} className={TEXT_LINK}>
+              structured query
+            </Link>
+            , which answers aggregation, count and filter questions.
+          </p>
+        </Card>
+      )}
+
+      {canSearchSemantically && !unavailable && (
+        <>
+          <form onSubmit={handleSubmit} className="rounded-xl border border-line bg-surface p-4 space-y-4">
+            <div>
+              <Field label="What are you looking for?" error={fieldErrors.question}>
+                <Textarea
                   id="semantic-question"
                   value={question}
                   onChange={(event) => handleQuestionChange(event.target.value)}
                   maxLength={MAX_QUESTION_LENGTH}
                   rows={3}
                   disabled={isSearching}
-                  placeholder="Ej: clientes quedale más y viven en Bucaramanga"
+                  placeholder="e.g. customers interested in premium plans who live in Bucaramanga"
                   aria-describedby="semantic-question-hint"
-                  className="w-full rounded-lg border border-black/10 dark:border-white/10 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-50"
                 />
-                <p id="semantic-question-hint" className="text-xs text-zinc-500">
-                  {question.trim().length}/{MAX_QUESTION_LENGTH} caracteres.
-                </p>
-                {fieldErrors.question && (
-                  <p className="text-xs text-red-600">{fieldErrors.question}</p>
-                )}
-              </div>
-
-              <div className="flex flex-wrap items-end gap-3">
-                <label className="text-xs space-y-1">
-                  <span className="text-zinc-500 block">Máximo de filas</span>
-                  <select
-                    value={topK}
-                    onChange={(event) => handleTopKChange(Number(event.target.value))}
-                    disabled={isSearching}
-                    className="rounded-lg border border-black/10 dark:border-white/10 bg-background px-2.5 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-50"
-                  >
-                    {TOP_K_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                {readyFromCache && (
-                  <span className="text-xs text-zinc-500">
-                    Este dataset ya está listo para búsqueda semántica.
-                  </span>
-                )}
-              </div>
-              {fieldErrors.topK && <p className="text-xs text-red-600">{fieldErrors.topK}</p>}
-
-              <FilterBuilder
-                columns={columns}
-                drafts={drafts}
-                errors={fieldErrors.filters}
-                disabled={isSearching}
-                onChange={handleDraftsChange}
-              />
-
-              {fieldErrors.others.length > 0 && (
-                <ul className="space-y-1">
-                  {fieldErrors.others.map((message) => (
-                    <li key={message} className="text-xs text-red-600">
-                      {message}
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="submit"
-                  disabled={isSearching}
-                  className="rounded-full bg-foreground text-background px-5 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
-                >
-                  {isSearching ? "Buscando..." : "Buscar"}
-                </button>
-              </div>
-            </form>
-
-            {indexing && (
-              <section
-                aria-live="polite"
-                className="rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50 dark:bg-blue-950/30 p-4 space-y-2"
-              >
-                <p className="text-sm font-medium">Preparando este dataset para búsqueda semántica</p>
-                <p className="text-xs text-zinc-600 dark:text-zinc-300">
-                  {indexing.status
-                    ? INDEXING_COPY[indexing.status]
-                    : "La indexación vectors empieza con la primera búsqueda."}{" "}
-                  Puede tardar unos minutos según su tamaño. Tu pregunta sigue siendo válida: la
-                  búsqueda se repetirá sola en cuanto el dataset esté listo.
-                </p>
-                <p className="text-xs text-zinc-500">
-                  {exhausted
-                    ? "Seguimos esperando al servidor. Puedes reintentar cuando quieras."
-                    : `Reintento automático cada ${POLL_INTERVAL_MS / 1000} s (intento ${indexing.attempt} de ${MAX_POLL_ATTEMPTS}).`}
-                </p>
-                <button
-                  type="button"
-                  onClick={retryRequest}
-                  className="rounded-full border border-blue-300 dark:border-blue-800 px-4 py-1.5 text-xs hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
-                >
-                  Reintentar ahora
-                </button>
-              </section>
-            )}
-
-            {justBecameReady && result && (
-              <p
-                aria-live="polite"
-                className="text-xs text-emerald-700 dark:text-emerald-400"
-              >
-                Búsqueda semántica lista.
+              </Field>
+              <p id="semantic-question-hint" className="mt-1 text-xs text-subtle">
+                {question.trim().length}/{MAX_QUESTION_LENGTH} characters.
               </p>
-            )}
+            </div>
 
-            {problem?.kind === "validation" && (
-              <section
-                aria-live="polite"
-                className="rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-950/30 p-4 space-y-1"
-              >
-                <p className="text-sm font-medium">Revisa los campos marcados.</p>
-                {problem.detail && <p className="text-xs text-zinc-600 dark:text-zinc-300">{problem.detail}</p>}
-              </section>
-            )}
-
-            {problem?.kind === "business-rule" && (
-              <section className="rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 space-y-2">
-                <p className="text-sm font-medium">No pudimos ejecutar esta búsqueda.</p>
-                <p className="text-xs text-zinc-500">{problem.detail}</p>
-                {canSearchSemantically && (
-                  <Link
-                    href={`/datasets/${id}/query`}
-                    className="inline-block text-xs underline underline-offset-4 hover:text-foreground transition-colors"
-                  >
-                    Probar con la consulta estructurada
-                  </Link>
-                )}
-              </section>
-            )}
-
-            {problem?.kind === "server-error" && (
-              <section className="rounded-xl border border-red-200 dark:border-red-900/60 bg-red-50 dark:bg-red-950/30 p-4 space-y-2">
-                <p className="text-sm font-medium">Algo falló de nuestro lado.</p>
-                <p className="text-xs text-zinc-600 dark:text-zinc-300">
-                  {problem.detail || "No pudimos completar la búsqueda. Vuelve a intentarlo."}
-                </p>
-                <button
-                  type="button"
-                  onClick={retryRequest}
-                  className="rounded-full border border-red-300 dark:border-red-800 px-4 py-1.5 text-xs hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+            <div className="flex flex-wrap items-end gap-3">
+              <Field label="Maximum rows" labelSize="sm">
+                <Select
+                  value={topK}
+                  onChange={(event) => handleTopKChange(Number(event.target.value))}
+                  disabled={isSearching}
                 >
-                  Reintentar
-                </button>
-              </section>
+                  {TOP_K_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              {readyFromCache && (
+                <span className="pb-2 text-xs text-subtle">
+                  This dataset is ready for semantic search.
+                </span>
+              )}
+            </div>
+            {fieldErrors.topK && <p className="text-xs text-bad-fg">{fieldErrors.topK}</p>}
+
+            <FilterBuilder
+              columns={columns}
+              drafts={drafts}
+              errors={fieldErrors.filters}
+              disabled={isSearching}
+              onChange={handleDraftsChange}
+            />
+
+            {fieldErrors.others.length > 0 && (
+              <ul className="space-y-1">
+                {fieldErrors.others.map((message) => (
+                  <li key={message} className="text-xs text-bad-fg">
+                    {message}
+                  </li>
+                ))}
+              </ul>
             )}
 
-            {problem?.kind === "not-found" && (
-              <section className="rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 space-y-2">
-                <p className="text-sm font-medium">No encontramos este dataset.</p>
-                <Link
-                  href="/datasets"
-                  className="inline-block text-xs underline underline-offset-4 hover:text-foreground transition-colors"
-                >
-                  Volver a mis datasets
+            <div className="flex flex-wrap gap-2">
+              <Button type="submit" loading={isSearching}>
+                {!isSearching && <IconSearch className="size-4" />}
+                {isSearching ? "Searching..." : "Search"}
+              </Button>
+            </div>
+          </form>
+
+          {indexing && (
+            <LiveNotice
+              tone="info"
+              icon={<Spinner className="mt-0.5 size-4 shrink-0" />}
+              action={
+                <Button size="sm" variant="secondary" onClick={retryRequest}>
+                  Retry now
+                </Button>
+              }
+            >
+              <p className="font-medium">Preparing this dataset for semantic search</p>
+              <p className="mt-1 text-xs opacity-90">
+                {indexing.status
+                  ? INDEXING_COPY[indexing.status]
+                  : "Indexing starts with the first search."}{" "}
+                It can take a few minutes depending on its size. Your question is still valid: the
+                search will repeat on its own as soon as the dataset is ready.
+              </p>
+              <p className="mt-1 text-xs opacity-75">
+                {exhausted
+                  ? "We are still waiting for the server. You can retry whenever you like."
+                  : `Automatic retry every ${POLL_INTERVAL_MS / 1000} s (attempt ${indexing.attempt} of ${MAX_POLL_ATTEMPTS}).`}
+              </p>
+            </LiveNotice>
+          )}
+
+          {justBecameReady && result && <Alert tone="success" title="Semantic search is ready." />}
+
+          {problem?.kind === "validation" && (
+            <LiveNotice tone="warning" icon={<IconAlertTriangle className="mt-0.5 size-4 shrink-0" />}>
+              <p className="font-medium">Check the highlighted fields.</p>
+              {problem.detail && <p className="mt-0.5 text-xs opacity-90">{problem.detail}</p>}
+            </LiveNotice>
+          )}
+
+          {problem?.kind === "business-rule" && (
+            <Card className="space-y-2">
+              <p className="text-sm font-medium text-fg">We could not run this search.</p>
+              <p className="text-xs text-muted">{problem.detail}</p>
+              {canSearchSemantically && (
+                <Link href={`/datasets/${id}/query`} className={TEXT_LINK}>
+                  Try the structured query instead
                 </Link>
-              </section>
-            )}
+              )}
+            </Card>
+          )}
 
-            {problem?.kind === "unauthorized" && (
-              <section className="rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 space-y-2">
-                <p className="text-sm font-medium">Tu sesión expiró.</p>
-                <Link
-                  href="/login"
-                  className="inline-block text-xs underline underline-offset-4 hover:text-foreground transition-colors"
-                >
-                  Volver a iniciar sesión
-                </Link>
-              </section>
-            )}
+          {problem?.kind === "rate-limited" && (
+            <Alert
+              tone="warning"
+              title="Too many requests."
+              action={
+                <Button size="sm" variant="secondary" onClick={retryRequest}>
+                  Retry
+                </Button>
+              }
+            >
+              <p className="text-xs">{problem.detail}</p>
+            </Alert>
+          )}
 
-            {result && <ResultPanel response={result} columns={columns} />}
-          </>
-        )}
+          {problem?.kind === "server-error" && (
+            <Alert
+              tone="error"
+              title="Something went wrong on our side."
+              action={
+                <Button size="sm" variant="secondary" onClick={retryRequest}>
+                  Retry
+                </Button>
+              }
+            >
+              <p className="text-xs">
+                {problem.detail || "We could not complete the search. Please try again."}
+              </p>
+            </Alert>
+          )}
 
-        {loadState === "ready" && !canSearchSemantically && !unavailable && (
-          <section className="rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 space-y-2">
-            <p className="text-sm font-medium">
-              Este dataset no tiene columnas de texto, así que no admite búsqueda semántica.
-            </p>
-            <p className="text-xs text-zinc-500">
-              La búsqueda semántica necesita texto para comparar significado. Para este dataset
-              conviene la{" "}
-              <Link
-                href={`/datasets/${id}/query`}
-                className="underline underline-offset-4 hover:text-foreground transition-colors"
-              >
-                consulta estructurada
+          {problem?.kind === "not-found" && (
+            <Card className="space-y-2">
+              <p className="text-sm font-medium text-fg">We could not find this dataset.</p>
+              <Link href="/datasets" className={TEXT_LINK}>
+                Back to my datasets
               </Link>
-              , que responde preguntas de agregación, conteos y filtros.
-            </p>
-          </section>
-        )}
-      </div>
-    </div>
+            </Card>
+          )}
+
+          {problem?.kind === "unauthorized" && (
+            <Card className="space-y-2">
+              <p className="text-sm font-medium text-fg">Your session has expired.</p>
+              <Link href="/login" className={TEXT_LINK}>
+                Sign in again
+              </Link>
+            </Card>
+          )}
+
+          {result && <ResultPanel response={result} columns={columns} />}
+        </>
+      )}
+
+      {loadState === "ready" && !canSearchSemantically && !unavailable && (
+        <Card className="space-y-2">
+          <p className="text-sm font-medium text-fg">
+            This dataset has no text columns, so it does not support semantic search.
+          </p>
+          <p className="text-xs text-muted">
+            Semantic search needs text to compare meaning. For this dataset, the{" "}
+            <Link href={`/datasets/${id}/query`} className={TEXT_LINK}>
+              structured query
+            </Link>{" "}
+            is a better fit: it answers aggregation, count and filter questions.
+          </p>
+        </Card>
+      )}
+    </PageShell>
   );
 }

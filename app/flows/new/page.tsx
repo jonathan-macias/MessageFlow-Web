@@ -7,16 +7,14 @@ import { useAuth } from "@/lib/context/auth-context";
 import type { DatasetListItem, DatasetColumn } from "@/lib/types/dataset";
 import type { ScheduleRequest } from "@/lib/types/flow";
 import { Breadcrumbs } from "@/components/breadcrumbs";
-
-const TIMEZONES = [
-  "America/Bogota",
-  "America/Lima",
-  "America/Mexico_City",
-  "America/New_York",
-  "America/Los_Angeles",
-  "Europe/Madrid",
-  "UTC",
-];
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, SectionTitle } from "@/components/ui/card";
+import { Field, Input, Select, Textarea } from "@/components/ui/field";
+import { PageHeader, PageShell } from "@/components/ui/page-shell";
+import { AIGeneratorBox } from "@/components/flows/ai-generator-box";
+import { ScheduleFields } from "@/components/flows/schedule-fields";
+import { VariableChips } from "@/components/flows/variable-chips";
 
 export default function NewFlowPage() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -55,7 +53,7 @@ export default function NewFlowPage() {
     if (!isAuthenticated) return;
     getDatasets()
       .then(setDatasets)
-      .catch((err) => setError(err.detail ?? "Error al cargar datasets."))
+      .catch((err) => setError(err.detail ?? "Failed to load datasets."))
       .finally(() => setIsLoadingData(false));
   }, [isAuthenticated]);
 
@@ -77,11 +75,11 @@ export default function NewFlowPage() {
 
   async function handleGenerateAI() {
     if (!selectedDatasetId) {
-      setAiError("Selecciona un dataset primero.");
+      setAiError("Select a dataset first.");
       return;
     }
     if (!aiDescription.trim()) {
-      setAiError("Escribe una descripcion del mensaje.");
+      setAiError("Enter a description of the message.");
       return;
     }
     setIsGenerating(true);
@@ -95,7 +93,7 @@ export default function NewFlowPage() {
       setMessageTemplate(result.messageTemplate);
     } catch (err) {
       const e = err as { detail?: string };
-      setAiError(e.detail ?? "Error al generar el mensaje.");
+      setAiError(e.detail ?? "Failed to generate the message.");
     } finally {
       setIsGenerating(false);
     }
@@ -104,7 +102,7 @@ export default function NewFlowPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedDatasetId) {
-      setError("Selecciona un dataset.");
+      setError("Select a dataset.");
       return;
     }
     setIsSubmitting(true);
@@ -134,288 +132,142 @@ export default function NewFlowPage() {
       router.push(`/flows`);
     } catch (err) {
       const e = err as { detail?: string };
-      setError(e.detail ?? "Error al crear flow.");
+      setError(e.detail ?? "Failed to create the flow.");
     } finally {
       setIsSubmitting(false);
     }
   }
 
   return (
-    <div className="flex flex-1 bg-zinc-50 dark:bg-black">
-      <div className="w-full max-w-2xl mx-auto py-10 px-4 space-y-6">
+    <PageShell width="2xl">
+      <div>
         <Breadcrumbs items={[
           { label: "Flows", href: "/flows" },
-          { label: "Crear flow" },
+          { label: "Create flow" },
         ]} />
-        <h1 className="text-2xl font-bold">Crear flow</h1>
+        <PageHeader title="Create flow" />
+      </div>
 
-        {error && (
-          <p className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 rounded p-2">
-            {error}
-          </p>
-        )}
+      {error && <Alert tone="error">{error}</Alert>}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Basic info */}
-          <div className="space-y-4">
-            <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wide">
-              Informacion basica
-            </h2>
-            <div>
-              <label htmlFor="flow-name" className="block text-sm font-medium mb-1">
-                Nombre
-              </label>
-              <input
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Basic info */}
+        <section className="space-y-2">
+          <SectionTitle>Basic information</SectionTitle>
+          <Card className="space-y-4">
+            <Field label="Name">
+              <Input
                 id="flow-name"
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
               />
-            </div>
-            <div>
-              <label htmlFor="flow-desc" className="block text-sm font-medium mb-1">
-                Descripcion
-              </label>
-              <input
+            </Field>
+            <Field label="Description">
+              <Input
                 id="flow-desc"
                 type="text"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
               />
-            </div>
-            <div>
-              <label htmlFor="flow-channel" className="block text-sm font-medium mb-1">
-                Canal
-              </label>
-              <select
+            </Field>
+            <Field label="Channel">
+              <Select
                 id="flow-channel"
                 value={channel}
                 onChange={(e) => setChannel(Number(e.target.value))}
-                className="w-full rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
               >
                 <option value={1}>WhatsApp</option>
-              </select>
-            </div>
-          </div>
+              </Select>
+            </Field>
+          </Card>
+        </section>
 
-          {/* Dataset selection */}
-          <div className="space-y-4">
-            <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wide">
-              Dataset
-            </h2>
-            <div>
-              <label htmlFor="flow-dataset" className="block text-sm font-medium mb-1">
-                Seleccionar dataset
-              </label>
-              <select
+        {/* Dataset selection */}
+        <section className="space-y-2">
+          <SectionTitle>Dataset</SectionTitle>
+          <Card>
+            <Field label="Select dataset">
+              <Select
                 id="flow-dataset"
                 required
                 value={selectedDatasetId}
                 onChange={(e) => setSelectedDatasetId(e.target.value)}
-                className="w-full rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
               >
                 <option value="">
-                  {isLoadingData ? "Cargando..." : "Seleccionar..."}
+                  {isLoadingData ? "Loading..." : "Select..."}
                 </option>
                 {datasets.map((ds) => (
                   <option key={ds.id} value={ds.id}>
                     {ds.name}
                   </option>
                 ))}
-              </select>
-            </div>
-          </div>
+              </Select>
+            </Field>
+          </Card>
+        </section>
 
-          {/* Message template */}
-          <div className="space-y-4">
-            <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wide">
-              Mensaje
-            </h2>
+        {/* Message template */}
+        <section className="space-y-2">
+          <SectionTitle>Message</SectionTitle>
+          <Card className="space-y-4">
+            <VariableChips
+              columns={columns}
+              label="Click to insert a variable into the message:"
+              onInsert={(col) => insertVariable(col.name, col.id)}
+            />
 
-            {columns.length > 0 && (
-              <div>
-                <p className="text-xs text-zinc-500 mb-2">
-                  Click para insertar una variable en el mensaje:
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {columns.map((col) => (
-                    <button
-                      key={col.id}
-                      type="button"
-                      onClick={() => insertVariable(col.name, col.id)}
-                      className="rounded bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 px-2 py-1 text-xs font-mono transition-colors"
-                    >
-                      {col.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* AI Generator */}
             {selectedDatasetId && (
-              <div className="rounded border border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-950/20 p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold">Generar con IA</span>
-                  <span className="text-xs text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 rounded px-1.5 py-0.5">beta</span>
-                </div>
-                <p className="text-xs text-zinc-500">
-                  Describe el mensaje que quieres y la IA lo genera usando las columnas del dataset.
-                </p>
-                <textarea
-                  rows={2}
-                  value={aiDescription}
-                  onChange={(e) => setAiDescription(e.target.value)}
-                  placeholder="Ej: Un recordatorio amigable de que la factura vence manana."
-                  className="w-full rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-400"
-                />
-                <div className="flex items-end gap-3">
-                  <div className="flex-1">
-                    <label className="block text-xs text-zinc-500 mb-1">Tono</label>
-                    <select
-                      value={aiTone}
-                      onChange={(e) => setAiTone(e.target.value)}
-                      className="w-full rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-400"
-                    >
-                      <option value="friendly">Amigable</option>
-                      <option value="professional">Profesional</option>
-                      <option value="formal">Formal</option>
-                      <option value="casual">Casual</option>
-                    </select>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleGenerateAI}
-                    disabled={isGenerating}
-                    className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                  >
-                    {isGenerating ? "Generando..." : "Generar"}
-                  </button>
-                </div>
-                {aiError && (
-                  <p className="text-xs text-red-600">{aiError}</p>
-                )}
-              </div>
+              <AIGeneratorBox
+                description={aiDescription}
+                onDescriptionChange={setAiDescription}
+                tone={aiTone}
+                onToneChange={setAiTone}
+                isGenerating={isGenerating}
+                error={aiError}
+                onGenerate={handleGenerateAI}
+              />
             )}
 
-            <div>
-              <label htmlFor="flow-template" className="block text-sm font-medium mb-1">
-                Template del mensaje
-              </label>
-              <textarea
+            <Field label="Message template" hint={<>Use {"{{columnId}}"} to insert dataset values.</>}>
+              <Textarea
                 id="flow-template"
                 required
                 rows={4}
                 value={messageTemplate}
                 onChange={(e) => setMessageTemplate(e.target.value)}
-                placeholder="Ej: Hola {{Nombre}}, tu ID es {{Identificacion}}."
-                className="w-full rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-zinc-400"
+                placeholder="e.g. Hi {{Name}}, your ID is {{Identification}}."
+                className="font-mono"
               />
-              <p className="text-xs text-zinc-500 mt-1">
-                Usa {"{{columnId}}"} para insertar valores del dataset.
-              </p>
-            </div>
-          </div>
+            </Field>
+          </Card>
+        </section>
 
-          {/* Schedule */}
-          <div className="space-y-4">
-            <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wide">
-              Programacion
-            </h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="flow-type" className="block text-sm font-medium mb-1">
-                  Tipo de ejecucion
-                </label>
-                <select
-                  id="flow-type"
-                  value={scheduleType}
-                  onChange={(e) => setScheduleType(Number(e.target.value))}
-                  className="w-full rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
-                >
-                  <option value={1}>OneTime</option>
-                  <option value={2}>Recurring</option>
-                  <option value={3}>DataTriggered</option>
-                  <option value={4}>Immediate</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="flow-tz" className="block text-sm font-medium mb-1">
-                  Zona horaria
-                </label>
-                <select
-                  id="flow-tz"
-                  value={timeZone}
-                  onChange={(e) => setTimeZone(e.target.value)}
-                  className="w-full rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
-                >
-                  {TIMEZONES.map((tz) => (
-                    <option key={tz} value={tz}>
-                      {tz}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
+        {/* Schedule */}
+        <section className="space-y-2">
+          <SectionTitle>Scheduling</SectionTitle>
+          <Card className="space-y-4">
+            <ScheduleFields
+              idPrefix="flow"
+              scheduleType={scheduleType}
+              onScheduleTypeChange={setScheduleType}
+              timeZone={timeZone}
+              onTimeZoneChange={setTimeZone}
+              runAtUtc={runAtUtc}
+              onRunAtUtcChange={setRunAtUtc}
+              recurrenceTimeOfDay={recurrenceTimeOfDay}
+              onRecurrenceTimeOfDayChange={setRecurrenceTimeOfDay}
+              recurrenceIntervalDays={recurrenceIntervalDays}
+              onRecurrenceIntervalDaysChange={setRecurrenceIntervalDays}
+            />
+          </Card>
+        </section>
 
-            {scheduleType === 1 && (
-              <div>
-                <label htmlFor="flow-runat" className="block text-sm font-medium mb-1">
-                  Fecha y hora de ejecucion
-                </label>
-                <input
-                  id="flow-runat"
-                  type="datetime-local"
-                  value={runAtUtc}
-                  onChange={(e) => setRunAtUtc(e.target.value)}
-                  className="w-full rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
-                />
-              </div>
-            )}
-
-            {scheduleType === 2 && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="flow-rec-time" className="block text-sm font-medium mb-1">
-                    Hora del dia
-                  </label>
-                  <input
-                    id="flow-rec-time"
-                    type="time"
-                    value={recurrenceTimeOfDay}
-                    onChange={(e) => setRecurrenceTimeOfDay(e.target.value)}
-                    className="w-full rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="flow-rec-interval" className="block text-sm font-medium mb-1">
-                    Intervalo (dias)
-                  </label>
-                  <input
-                    id="flow-rec-interval"
-                    type="number"
-                    min={1}
-                    value={recurrenceIntervalDays}
-                    onChange={(e) => setRecurrenceIntervalDays(e.target.value)}
-                    className="w-full rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full rounded bg-foreground py-2 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
-          >
-            {isSubmitting ? "Creando..." : "Crear flow"}
-          </button>
-        </form>
-      </div>
-    </div>
+        <Button type="submit" loading={isSubmitting} className="w-full">
+          {isSubmitting ? "Creating..." : "Create flow"}
+        </Button>
+      </form>
+    </PageShell>
   );
 }
