@@ -1,9 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { login, loginWithGoogle } from "@/lib/api";
 import { useAuth } from "@/lib/context/auth-context";
+import { AuthShell } from "@/components/auth-shell";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Field, Input } from "@/components/ui/field";
 
 declare global {
   interface Window {
@@ -54,15 +59,23 @@ export default function LoginPage() {
             router.replace("/");
           } catch (err) {
             const e = err as { detail?: string };
-            setError(e.detail ?? "Error al iniciar sesion con Google.");
+            setError(e.detail ?? "Failed to sign in with Google.");
           }
         },
       });
       if (googleBtnRef.current) {
+        // El botón es un iframe de Google: solo se controlan estas opciones. El ancho debe ser un
+        // número de píxeles (200–400), así que se mide el contenedor; el tema sigue al de la app.
+        const isDark = document.documentElement.classList.contains("dark");
+        const width = Math.min(400, Math.max(200, Math.round(googleBtnRef.current.clientWidth) || 320));
         window.google.accounts.id.renderButton(googleBtnRef.current, {
-          theme: "outline",
+          theme: isDark ? "filled_black" : "outline",
           size: "large",
-          width: "100%",
+          text: "continue_with",
+          shape: "rectangular",
+          logo_alignment: "left",
+          locale: "en",
+          width,
         });
       }
     }
@@ -92,7 +105,7 @@ export default function LoginPage() {
       router.replace("/");
     } catch (err) {
       const e = err as { detail?: string };
-      setError(e.detail ?? "Credenciales incorrectas.");
+      setError(e.detail ?? "Incorrect email or password.");
     } finally {
       setIsSubmitting(false);
     }
@@ -103,75 +116,56 @@ export default function LoginPage() {
     googleClientId && googleClientId !== "TU_GOOGLE_CLIENT_ID_AQUI";
 
   return (
-    <div className="flex flex-1 items-center justify-center bg-zinc-50 dark:bg-black px-4">
-      <div className="w-full max-w-sm space-y-6">
-        <h1 className="text-2xl font-bold text-center">Iniciar sesion</h1>
+    <AuthShell
+      title="Sign in"
+      subtitle="Welcome back to MessageFlow."
+      footer={
+        <>
+          Don&apos;t have an account?{" "}
+          <Link href="/register" className="font-medium text-accent underline-offset-4 hover:underline">
+            Sign up
+          </Link>
+        </>
+      }
+    >
+      {error && <Alert tone="error">{error}</Alert>}
 
-        {error && (
-          <p className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 rounded p-2 text-center">
-            {error}
-          </p>
-        )}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Field label="Email">
+          <Input
+            id="email"
+            type="email"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </Field>
+        <Field label="Password">
+          <Input
+            id="password"
+            type="password"
+            required
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </Field>
+        <Button type="submit" loading={isSubmitting} className="w-full">
+          {isSubmitting ? "Signing in..." : "Sign in"}
+        </Button>
+      </form>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium mb-1">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
-            />
+      {showGoogle && (
+        <>
+          <div className="flex items-center gap-3 text-xs text-subtle">
+            <span className="h-px flex-1 bg-line" />
+            or
+            <span className="h-px flex-1 bg-line" />
           </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium mb-1">
-              Contrasena
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full rounded bg-foreground py-2 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
-          >
-            {isSubmitting ? "Entrando..." : "Entrar"}
-          </button>
-        </form>
-
-        {showGoogle && (
-          <>
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-black/10 dark:border-white/10" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="bg-zinc-50 dark:bg-black px-2 text-zinc-500">
-                  o
-                </span>
-              </div>
-            </div>
-            <div ref={googleBtnRef} className="flex justify-center" />
-          </>
-        )}
-
-        <p className="text-center text-sm text-zinc-500">
-          No tienes cuenta?{" "}
-          <a href="/register" className="font-medium text-foreground underline">
-            Registrate
-          </a>
-        </p>
-      </div>
-    </div>
+          <div ref={googleBtnRef} className="flex w-full justify-center" />
+        </>
+      )}
+    </AuthShell>
   );
 }

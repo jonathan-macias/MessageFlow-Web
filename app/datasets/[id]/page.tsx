@@ -7,6 +7,13 @@ import { getDataset, getDatasetRows, getDatasetColumns } from "@/lib/api";
 import { useAuth } from "@/lib/context/auth-context";
 import type { DatasetDetail, DatasetColumn, PaginatedRows } from "@/lib/types/dataset";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { PageHeader, PageShell } from "@/components/ui/page-shell";
+import { buttonClass } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
+import { SectionTitle, StatCard } from "@/components/ui/card";
+import { Table, THead, Th, Tr, Td } from "@/components/ui/table";
+import { Pagination } from "@/components/ui/pagination";
+import { IconSearch, IconSparkles } from "@/components/ui/icons";
 
 export default function DatasetDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -33,7 +40,7 @@ export default function DatasetDetailPage() {
         setDataset(ds);
         setColumns(cols);
       })
-      .catch((err) => setError(err.detail ?? "Error al cargar dataset."))
+      .catch((err) => setError(err.detail ?? "Failed to load the dataset."))
       .finally(() => setIsLoadingData(false));
   }, [isAuthenticated, id]);
 
@@ -41,7 +48,7 @@ export default function DatasetDetailPage() {
     if (!isAuthenticated || !id) return;
     getDatasetRows(id, page, 20)
       .then(setRowsData)
-      .catch((err) => setError(err.detail ?? "Error al cargar filas."));
+      .catch((err) => setError(err.detail ?? "Failed to load rows."));
   }, [isAuthenticated, id, page]);
 
   if (isLoading || !isAuthenticated) return null;
@@ -49,140 +56,97 @@ export default function DatasetDetailPage() {
   const columnNames = columns.map((c) => c.name);
 
   return (
-    <div className="flex flex-1 bg-zinc-50 dark:bg-black">
-      <div className="w-full max-w-5xl mx-auto py-10 px-4 space-y-6">
+    <PageShell width="5xl">
+      <div>
         <Breadcrumbs items={[
           { label: "Datasets", href: "/datasets" },
           { label: isLoadingData ? "..." : dataset?.name ?? "..." },
         ]} />
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">
-            {isLoadingData ? "Cargando..." : dataset?.name}
-          </h1>
-          {dataset && (
-            <div className="flex items-center gap-2">
-              <Link
-                href={`/datasets/${id}/query`}
-                className="rounded-full bg-blue-600 text-white px-3 py-1 text-xs font-medium hover:bg-blue-700 transition-colors"
-              >
-                Preguntar con IA
-              </Link>
-              <Link
-                href={`/datasets/${id}/semantic-search`}
-                className="rounded-full border border-black/10 dark:border-white/10 px-3 py-1 text-xs font-medium hover:bg-black/[.04] dark:hover:bg-white/[.06] transition-colors"
-              >
-                Búsqueda semántica
-              </Link>
-            </div>
-          )}
-        </div>
-
-        {error && (
-          <p className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 rounded p-2">
-            {error}
-          </p>
-        )}
-
-        {dataset && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-            <div className="rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-3">
-              <p className="text-zinc-500">Archivo</p>
-              <p className="font-medium">{dataset.sourceFileName}</p>
-            </div>
-            <div className="rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-3">
-              <p className="text-zinc-500">Filas</p>
-              <p className="font-medium">{dataset.rowCount}</p>
-            </div>
-            <div className="rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-3">
-              <p className="text-zinc-500">Columna telefono</p>
-              <p className="font-medium">{dataset.phoneColumn}</p>
-            </div>
-            <div className="rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-3">
-              <p className="text-zinc-500">Creado</p>
-              <p className="font-medium">
-                {new Date(dataset.createdAtUtc).toLocaleDateString()}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {columns.length > 0 && (
-          <div>
-            <h2 className="text-lg font-semibold mb-2">Columnas</h2>
-            <div className="flex flex-wrap gap-2">
-              {columns.map((col) => (
-                <span
-                  key={col.id}
-                  className="rounded bg-zinc-200 dark:bg-zinc-800 px-2 py-1 text-xs font-mono"
-                >
-                  {col.name}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {rowsData && (
-          <div className="space-y-3">
-            <h2 className="text-lg font-semibold">
-              Registros ({rowsData.totalCount})
-            </h2>
-            <div className="overflow-x-auto rounded border border-black/10 dark:border-white/10">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-zinc-100 dark:bg-zinc-800">
-                    <th className="px-3 py-2 text-left font-medium">#</th>
-                    {columnNames.map((name) => (
-                      <th key={name} className="px-3 py-2 text-left font-medium">
-                        {name}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {rowsData.items.map((row) => (
-                    <tr
-                      key={row.id}
-                      className="border-t border-black/5 dark:border-white/5"
-                    >
-                      <td className="px-3 py-2 text-zinc-500">{row.rowNumber}</td>
-                      {columnNames.map((name) => (
-                        <td key={name} className="px-3 py-2">
-                          {row.values[name] ?? (
-                            <span className="text-zinc-400">—</span>
-                          )}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {rowsData.totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2">
-                <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="rounded border border-black/10 dark:border-white/10 px-3 py-1 text-sm disabled:opacity-50"
-                >
-                  Anterior
-                </button>
-                <span className="text-sm text-zinc-500">
-                  Pagina {rowsData.page} de {rowsData.totalPages}
-                </span>
-                <button
-                  onClick={() => setPage((p) => Math.min(rowsData.totalPages, p + 1))}
-                  disabled={page === rowsData.totalPages}
-                  className="rounded border border-black/10 dark:border-white/10 px-3 py-1 text-sm disabled:opacity-50"
-                >
-                  Siguiente
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+        <PageHeader
+          title={isLoadingData ? "Loading..." : dataset?.name}
+          actions={
+            dataset && (
+              <>
+                <Link href={`/datasets/${id}/query`} className={buttonClass("primary", "sm")}>
+                  <IconSparkles className="size-3.5" aria-hidden="true" />
+                  Ask AI
+                </Link>
+                <Link href={`/datasets/${id}/semantic-search`} className={buttonClass("secondary", "sm")}>
+                  <IconSearch className="size-3.5" aria-hidden="true" />
+                  Semantic search
+                </Link>
+              </>
+            )
+          }
+        />
       </div>
-    </div>
+
+      {error && <Alert tone="error">{error}</Alert>}
+
+      {dataset && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+          <StatCard label="File" value={<span className="break-words text-sm font-medium">{dataset.sourceFileName}</span>} />
+          <StatCard label="Rows" value={dataset.rowCount} />
+          <StatCard label="Phone column" value={<span className="break-words text-sm font-medium">{dataset.phoneColumn}</span>} />
+          <StatCard
+            label="Created"
+            value={new Date(dataset.createdAtUtc).toLocaleDateString("en-US")}
+          />
+        </div>
+      )}
+
+      {columns.length > 0 && (
+        <section aria-labelledby="columns-heading" className="space-y-2">
+          <SectionTitle id="columns-heading">Columns</SectionTitle>
+          <ul className="flex flex-wrap gap-2">
+            {columns.map((col) => (
+              <li
+                key={col.id}
+                className="rounded-full border border-line bg-raised px-2.5 py-1 font-mono text-xs text-fg"
+              >
+                {col.name}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {rowsData && (
+        <section aria-labelledby="records-heading" className="space-y-3">
+          <SectionTitle id="records-heading">Records ({rowsData.totalCount})</SectionTitle>
+          <Table>
+            <THead>
+              <tr>
+                <Th>#</Th>
+                {columnNames.map((name) => (
+                  <Th key={name}>{name}</Th>
+                ))}
+              </tr>
+            </THead>
+            <tbody>
+              {rowsData.items.map((row) => (
+                <Tr key={row.id}>
+                  <Td className="text-subtle tabular-nums">{row.rowNumber}</Td>
+                  {columnNames.map((name) => (
+                    <Td key={name}>
+                      {row.values[name] ?? <span className="text-subtle">—</span>}
+                    </Td>
+                  ))}
+                </Tr>
+              ))}
+            </tbody>
+          </Table>
+
+          {rowsData.totalPages > 1 && (
+            <Pagination
+              page={page}
+              totalPages={rowsData.totalPages}
+              onPrevious={() => setPage((p) => Math.max(1, p - 1))}
+              onNext={() => setPage((p) => Math.min(rowsData.totalPages, p + 1))}
+            />
+          )}
+        </section>
+      )}
+    </PageShell>
   );
 }

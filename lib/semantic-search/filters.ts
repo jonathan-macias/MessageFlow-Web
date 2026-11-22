@@ -36,14 +36,14 @@ export function defaultOperatorForColumn(column: DatasetColumn | undefined): Dra
 }
 
 function draftError(draft: FilterDraft, column: DatasetColumn | undefined): string | null {
-  if (!draft.column) return "Elige una columna.";
-  if (!column) return "La columna elegida no existe en este dataset.";
-  if (!draft.operator) return "Elige un operador.";
+  if (!draft.column) return "Choose a column.";
+  if (!column) return "The chosen column does not exist in this dataset.";
+  if (!draft.operator) return "Choose an operator.";
   if (!operatorsForDataType(column.dataType).includes(draft.operator)) {
-    return `Ese operador no es válido para columnas de tipo ${dataTypeLabel(column.dataType).toLowerCase()}.`;
+    return `That operator is not valid for ${dataTypeLabel(column.dataType).toLowerCase()} columns.`;
   }
   if (operatorNeedsValue(draft.operator) && !draft.value.trim()) {
-    return "Escribe un valor para este operador.";
+    return "Enter a value for this operator.";
   }
   return null;
 }
@@ -82,16 +82,16 @@ export function buildFilters(
 
 export function validateQuestion(question: string): string | null {
   const trimmed = question.trim();
-  if (!trimmed) return "Escribe una pregunta.";
+  if (!trimmed) return "Enter a question.";
   if (trimmed.length > MAX_QUESTION_LENGTH) {
-    return `La pregunta puede tener hasta ${MAX_QUESTION_LENGTH} caracteres.`;
+    return `The question can be up to ${MAX_QUESTION_LENGTH} characters long.`;
   }
   return null;
 }
 
 export function validateTopK(topK: number): string | null {
   if (!Number.isInteger(topK) || topK < MIN_TOP_K || topK > MAX_TOP_K) {
-    return `El número de resultados debe estar entre ${MIN_TOP_K} y ${MAX_TOP_K}.`;
+    return `The number of results must be between ${MIN_TOP_K} and ${MAX_TOP_K}.`;
   }
   return null;
 }

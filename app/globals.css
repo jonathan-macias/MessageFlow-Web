@@ -1,26 +1,147 @@
 @import "tailwindcss";
 
+/*
+ * Design tokens de MessageFlow.
+ *
+ * El tema se controla con la clase `dark` en <html> (oscuro por defecto; ver app/layout.tsx y
+ * components/ui/theme-toggle.tsx). Los componentes usan utilidades semánticas (bg-canvas,
+ * text-muted, border-line, bg-accent...) y NO pares `dark:`: cada token cambia de valor con el tema.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+
+  /* Superficies */
+  --canvas: #fafafa;
+  --surface: #ffffff;
+  --raised: #f4f4f5;
+  --field: #ffffff;
+
+  /* Bordes y texto */
+  --line: rgb(0 0 0 / 0.1);
+  --line-strong: rgb(0 0 0 / 0.2);
+  --fg: #18181b;
+  --muted: #52525b;
+  --subtle: #71717a;
+
+  /* Acento (teal). El texto sobre el acento ya cumple contraste AA. */
+  --accent: #0f766e;
+  --accent-hover: #115e59;
+  --on-accent: #ffffff;
+  --accent-soft: rgb(15 118 110 / 0.1);
+  --focus: #0d9488;
+
+  /* Estados: fondo translúcido + texto + borde */
+  --ok-bg: rgb(21 128 61 / 0.1);
+  --ok-fg: #15803d;
+  --ok-line: rgb(21 128 61 / 0.3);
+  --warn-bg: rgb(180 83 9 / 0.1);
+  --warn-fg: #b45309;
+  --warn-line: rgb(180 83 9 / 0.3);
+  --bad-bg: rgb(185 28 28 / 0.08);
+  --bad-fg: #b91c1c;
+  --bad-line: rgb(185 28 28 / 0.3);
+  --info-bg: rgb(29 78 216 / 0.08);
+  --info-fg: #1d4ed8;
+  --info-line: rgb(29 78 216 / 0.3);
+
+  --pop: 0 8px 24px -6px rgb(0 0 0 / 0.18), 0 2px 6px rgb(0 0 0 / 0.08);
+}
+
+.dark {
+  color-scheme: dark;
+
+  --canvas: #09090b;
+  --surface: #111114;
+  --raised: #18181c;
+  --field: #0c0c0f;
+
+  --line: rgb(255 255 255 / 0.09);
+  --line-strong: rgb(255 255 255 / 0.18);
+  --fg: #ededef;
+  --muted: #a1a1aa;
+  --subtle: #8b8b94;
+
+  --accent: #2dd4bf;
+  --accent-hover: #5eead4;
+  --on-accent: #04201d;
+  --accent-soft: rgb(45 212 191 / 0.12);
+  --focus: #2dd4bf;
+
+  --ok-bg: rgb(74 222 128 / 0.12);
+  --ok-fg: #4ade80;
+  --ok-line: rgb(74 222 128 / 0.28);
+  --warn-bg: rgb(251 191 36 / 0.12);
+  --warn-fg: #fbbf24;
+  --warn-line: rgb(251 191 36 / 0.28);
+  --bad-bg: rgb(248 113 113 / 0.12);
+  --bad-fg: #f87171;
+  --bad-line: rgb(248 113 113 / 0.3);
+  --info-bg: rgb(96 165 250 / 0.12);
+  --info-fg: #60a5fa;
+  --info-line: rgb(96 165 250 / 0.3);
+
+  --pop: 0 10px 30px -8px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(255 255 255 / 0.06);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-field: var(--field);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-on-accent: var(--on-accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-focus: var(--focus);
+  --color-ok-bg: var(--ok-bg);
+  --color-ok-fg: var(--ok-fg);
+  --color-ok-line: var(--ok-line);
+  --color-warn-bg: var(--warn-bg);
+  --color-warn-fg: var(--warn-fg);
+  --color-warn-line: var(--warn-line);
+  --color-bad-bg: var(--bad-bg);
+  --color-bad-fg: var(--bad-fg);
+  --color-bad-line: var(--bad-line);
+  --color-info-bg: var(--info-bg);
+  --color-info-fg: var(--info-fg);
+  --color-info-line: var(--info-line);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --shadow-pop: var(--pop);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--canvas);
+  color: var(--fg);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+/* Foco visible y consistente en todo lo interactivo (teclado), sin ruido con el ratón. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Respeta la preferencia de movimiento reducido. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

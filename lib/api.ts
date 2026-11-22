@@ -39,6 +39,59 @@ function buildHeaders(extra?: Record<string, string>): Record<string, string> {
   return headers;
 }
 
+const RATE_LIMIT_DETAIL = "Too many requests. Please wait a moment and try again.";
+const GENERIC_ERROR_DETAIL = "Request failed.";
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim() !== "";
+}
+
+function fallbackDetail(res: Response): string {
+  if (res.status === 429) {
+    const retryAfter = res.headers.get("Retry-After")?.trim() ?? "";
+    // Retry-After can also be an HTTP date; only the delay-seconds form is rendered.
+    if (/^\d+$/.test(retryAfter)) {
+      const seconds = Number(retryAfter);
+      if (seconds > 0) {
+        return `${RATE_LIMIT_DETAIL} Try again in ${seconds} ${seconds === 1 ? "second" : "seconds"}.`;
+      }
+    }
+    return RATE_LIMIT_DETAIL;
+  }
+  return res.statusText || GENERIC_ERROR_DETAIL;
+}
+
+/**
+ * Builds the error thrown for a non-2xx response. Some responses (notably 429 from
+ * rate limiting) come with an empty body and, over HTTP/2, an empty `statusText`, so
+ * `detail` must never end up as an empty string: callers use `e.detail ?? "fallback"`.
+ */
+async function toApiError(res: Response): Promise<Rfc7807Error> {
+  const parsed: unknown = await res.json().catch(() => null);
+  const body =
+    typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
+      ? (parsed as Partial<Rfc7807Error>)
+      : null;
+
+  const detail = isNonEmptyString(body?.detail) ? body.detail : fallbackDetail(res);
+  const title = isNonEmptyString(body?.title)
+    ? body.title
+    : res.status === 429
+      ? "Too Many Requests"
+      : "Error";
+
+  // `status` is kept exactly as the server sent it: the semantic-search 409 body uses it
+  // for the indexing state ("Pending" | "Indexing" | "Failed"), not for the HTTP code.
+  return {
+    type: "about:blank",
+    status: res.status,
+    ...body,
+    title,
+    detail,
+    httpStatus: res.status,
+  };
+}
+
 async function request<T>(path: string, options: RequestInit): Promise<T> {
   const headers = buildHeaders(options.headers as Record<string, string>);
 
@@ -49,14 +102,7 @@ async function request<T>(path: string, options: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => null);
-    const error: Rfc7807Error = body ?? {
-      type: "about:blank",
-      title: "Error",
-      status: res.status,
-      detail: res.statusText,
-    };
-    throw { ...error, httpStatus: res.status };
+    throw await toApiError(res);
   }
 
   if (res.status === 204 || res.headers.get("content-length") === "0") {
@@ -73,14 +119,7 @@ async function requestVoid(path: string, options: RequestInit): Promise<void> {
   const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => null);
-    const error: Rfc7807Error = body ?? {
-      type: "about:blank",
-      title: "Error",
-      status: res.status,
-      detail: res.statusText,
-    };
-    throw { ...error, httpStatus: res.status };
+    throw await toApiError(res);
   }
 }
 
