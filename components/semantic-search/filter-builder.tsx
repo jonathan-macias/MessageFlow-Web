@@ -47,14 +47,14 @@ function ValueInput({
       event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
     ) => onChange(event.target.value),
     className: inputClass,
-    "aria-label": `Valor del filtro sobre ${column.name}`,
+    "aria-label": `Filter value for ${column.name}`,
   };
 
   if (column.dataType === ColumnDataType.Boolean) {
     return (
       <select {...common}>
-        <option value="">Selecciona...</option>
-        <option value="true">Sí</option>
+        <option value="">Select...</option>
+        <option value="true">Yes</option>
         <option value="false">No</option>
       </select>
     );
@@ -99,15 +99,15 @@ export function FilterBuilder({
 
   return (
     <fieldset className="space-y-2" disabled={disabled}>
-      <legend className="text-sm font-medium mb-1">Filtros (opcional)</legend>
+      <legend className="text-sm font-medium mb-1">Filters (optional)</legend>
       <p className="text-xs text-zinc-500 mb-2">
-        Acotan las filas que se buscan, pero no el orden: la relevancia la decide el
-        significado del texto. Se combinan con Y, hasta {MAX_FILTERS}.
+        They narrow down which rows are searched, but not the order: relevance is decided
+        by the meaning of the text. Filters are combined with AND, up to {MAX_FILTERS}.
       </p>
 
       {drafts.length === 0 && (
         <p className="text-xs text-zinc-400 border border-dashed border-black/10 dark:border-white/10 rounded-lg p-3">
-          Sin filtros: se buscan filas en todo el dataset.
+          No filters: rows are searched across the whole dataset.
         </p>
       )}
 
@@ -125,7 +125,7 @@ export function FilterBuilder({
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-zinc-500">
-                Filtro {index + 1}
+                Filter {index + 1}
                 {column ? ` · ${dataTypeLabel(column.dataType)}` : ""}
               </span>
               <button
@@ -133,20 +133,20 @@ export function FilterBuilder({
                 onClick={() => onChange(drafts.filter((item) => item.id !== draft.id))}
                 className="text-xs text-zinc-500 hover:text-red-600 transition-colors"
               >
-                Quitar
+                Remove
               </button>
             </div>
 
             <div className="grid gap-2 sm:grid-cols-2">
               <label className="text-xs space-y-1">
-                <span className="text-zinc-500">Columna</span>
+                <span className="text-zinc-500">Column</span>
                 <select
                   value={draft.column}
                   onChange={(event) => selectColumn(draft, event.target.value)}
                   className={inputClass}
-                  aria-label={`Columna del filtro ${index + 1}`}
+                  aria-label={`Column of filter ${index + 1}`}
                 >
-                  <option value="">Selecciona...</option>
+                  <option value="">Select...</option>
                   {columns.map((item) => (
                     <option key={item.id} value={item.name}>
                       {item.name} ({dataTypeLabel(item.dataType)})
@@ -156,15 +156,15 @@ export function FilterBuilder({
               </label>
 
               <label className="text-xs space-y-1">
-                <span className="text-zinc-500">Operador</span>
+                <span className="text-zinc-500">Operator</span>
                 <select
                   value={draft.operator}
                   onChange={(event) => selectOperator(draft, event.target.value as DraftOperator)}
                   disabled={!column}
                   className={inputClass}
-                  aria-label={`Operador del filtro ${index + 1}`}
+                  aria-label={`Operator of filter ${index + 1}`}
                 >
-                  <option value="">Selecciona...</option>
+                  <option value="">Select...</option>
                   {operators.map((operator) => (
                     <option key={operator} value={operator}>
                       {operatorLabel(operator)}
@@ -176,7 +176,7 @@ export function FilterBuilder({
 
             {showValue && column && (
               <label className="text-xs space-y-1 block">
-                <span className="text-zinc-500">Valor</span>
+                <span className="text-zinc-500">Value</span>
                 <ValueInput
                   draft={draft}
                   column={column}
@@ -197,7 +197,7 @@ export function FilterBuilder({
         disabled={isFull}
         className="rounded-full border border-black/10 dark:border-white/10 px-3 py-1.5 text-xs hover:bg-black/[.04] dark:hover:bg-white/[.06] disabled:opacity-50 transition-colors"
       >
-        {isFull ? `Máximo ${MAX_FILTERS} filtros` : "Agregar filtro"}
+        {isFull ? `Maximum ${MAX_FILTERS} filters` : "Add filter"}
       </button>
     </fieldset>
   );

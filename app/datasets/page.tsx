@@ -24,7 +24,7 @@ export default function DatasetsPage() {
     if (!isAuthenticated) return;
     getDatasets()
       .then(setDatasets)
-      .catch((err) => setError(err.detail ?? "Error al cargar datasets."))
+      .catch((err) => setError(err.detail ?? "Failed to load datasets."))
       .finally(() => setIsLoadingData(false));
   }, [isAuthenticated]);
 
@@ -39,7 +39,7 @@ export default function DatasetsPage() {
             href="/datasets/upload"
             className="rounded bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"
           >
-            Subir dataset
+            Upload dataset
           </Link>
         </div>
 
@@ -50,9 +50,9 @@ export default function DatasetsPage() {
         )}
 
         {isLoadingData ? (
-          <p className="text-zinc-500">Cargando...</p>
+          <p className="text-zinc-500">Loading...</p>
         ) : datasets.length === 0 ? (
-          <p className="text-zinc-500">No hay datasets.</p>
+          <p className="text-zinc-500">No datasets yet.</p>
         ) : (
           <div className="space-y-2">
             {datasets.map((ds) => (

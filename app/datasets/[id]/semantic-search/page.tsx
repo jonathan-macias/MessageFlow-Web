@@ -28,9 +28,9 @@ const MAX_POLL_ATTEMPTS = 20;
 const TOP_K_OPTIONS = [5, 10, 20, 50];
 
 const INDEXING_COPY: Record<SemanticIndexingStatus, string> = {
-  Pending: "Este dataset está en cola para indexarse.",
-  Indexing: "Este dataset se está indexando ahora mismo.",
-  Failed: "La indexación anterior no terminó. Se reintentará al buscar de nuevo.",
+  Pending: "This dataset is queued for indexing.",
+  Indexing: "This dataset is being indexed right now.",
+  Failed: "The previous indexing run did not finish. It will be retried the next time you search.",
 };
 
 type LoadState = "loading" | "ready" | "not-found" | "error";
@@ -57,7 +57,7 @@ function mergeServerFieldErrors(
   const known = new Set(["question", "topK", "filters"]);
 
   for (const [field, messages] of Object.entries(fieldErrors)) {
-    const message = messages[0] ?? "Valor inválido.";
+    const message = messages[0] ?? "Invalid value.";
 
     if (field.toLowerCase() === "question") {
       result.question = message;
@@ -289,54 +289,54 @@ export default function SemanticSearchPage() {
           items={[
             { label: "Datasets", href: "/datasets" },
             { label: datasetName || "...", href: `/datasets/${id}` },
-            { label: "Búsqueda semántica" },
+            { label: "Semantic search" },
           ]}
         />
 
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold">Búsqueda semántica</h1>
+          <h1 className="text-2xl font-bold">Semantic search</h1>
           <p className="text-sm text-zinc-500">
-            Encuentra las filas de{" "}
-            <strong>{notFound || loadState === "loading" ? "este dataset" : datasetName}</strong> que
-            se parecen en significado a tu pregunta.
+            Find the rows of{" "}
+            <strong>{notFound || loadState === "loading" ? "this dataset" : datasetName}</strong> that
+            are closest in meaning to your question.
           </p>
         </div>
 
         {notFound && (
           <div className="rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 space-y-2">
-            <p className="text-sm font-medium">No encontramos este dataset.</p>
+            <p className="text-sm font-medium">We could not find this dataset.</p>
             <p className="text-xs text-zinc-500">
-              Puede que ya no exista o que el enlace no sea correcto.
+              It may no longer exist, or the link may be incorrect.
             </p>
             <Link
               href="/datasets"
               className="inline-block text-xs underline underline-offset-4 hover:text-foreground transition-colors"
             >
-              Volver a mis datasets
+              Back to my datasets
             </Link>
           </div>
         )}
 
         {loadState === "error" && (
           <div className="rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 space-y-2">
-            <p className="text-sm font-medium">No pudimos cargar este dataset.</p>
-            <p className="text-xs text-zinc-500">Revisa tu conexión e inténtalo de nuevo.</p>
+            <p className="text-sm font-medium">We could not load this dataset.</p>
+            <p className="text-xs text-zinc-500">Check your connection and try again.</p>
           </div>
         )}
 
         {unavailable && (
           <div className="rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 space-y-2">
-            <p className="text-sm font-medium">La búsqueda semántica no está disponible.</p>
+            <p className="text-sm font-medium">Semantic search is not available.</p>
             <p className="text-xs text-zinc-500">
-              {problem.detail || "Esta función está deshabilitada en el servidor por ahora."} Para
-              meantime puedes usar la{" "}
+              {problem.detail || "This feature is currently disabled on the server."} In the
+              meantime you can use the{" "}
               <Link
                 href={`/datasets/${id}/query`}
                 className="underline underline-offset-4 hover:text-foreground transition-colors"
               >
-                consulta estructurada
+                structured query
               </Link>
-              , que responde preguntas de agregación, conteos y filtros.
+              , which answers aggregation, count and filter questions.
             </p>
           </div>
         )}
@@ -349,7 +349,7 @@ export default function SemanticSearchPage() {
             >
               <div className="space-y-1">
                 <label htmlFor="semantic-question" className="text-sm font-medium block">
-                  ¿Qué estás buscando?
+                  What are you looking for?
                 </label>
                 <textarea
                   id="semantic-question"
@@ -358,12 +358,12 @@ export default function SemanticSearchPage() {
                   maxLength={MAX_QUESTION_LENGTH}
                   rows={3}
                   disabled={isSearching}
-                  placeholder="Ej: clientes quedale más y viven en Bucaramanga"
+                  placeholder="e.g. customers interested in premium plans who live in Bucaramanga"
                   aria-describedby="semantic-question-hint"
                   className="w-full rounded-lg border border-black/10 dark:border-white/10 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-50"
                 />
                 <p id="semantic-question-hint" className="text-xs text-zinc-500">
-                  {question.trim().length}/{MAX_QUESTION_LENGTH} caracteres.
+                  {question.trim().length}/{MAX_QUESTION_LENGTH} characters.
                 </p>
                 {fieldErrors.question && (
                   <p className="text-xs text-red-600">{fieldErrors.question}</p>
@@ -372,7 +372,7 @@ export default function SemanticSearchPage() {
 
               <div className="flex flex-wrap items-end gap-3">
                 <label className="text-xs space-y-1">
-                  <span className="text-zinc-500 block">Máximo de filas</span>
+                  <span className="text-zinc-500 block">Maximum rows</span>
                   <select
                     value={topK}
                     onChange={(event) => handleTopKChange(Number(event.target.value))}
@@ -388,7 +388,7 @@ export default function SemanticSearchPage() {
                 </label>
                 {readyFromCache && (
                   <span className="text-xs text-zinc-500">
-                    Este dataset ya está listo para búsqueda semántica.
+                    This dataset is ready for semantic search.
                   </span>
                 )}
               </div>
@@ -418,7 +418,7 @@ export default function SemanticSearchPage() {
                   disabled={isSearching}
                   className="rounded-full bg-foreground text-background px-5 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
                 >
-                  {isSearching ? "Buscando..." : "Buscar"}
+                  {isSearching ? "Searching..." : "Search"}
                 </button>
               </div>
             </form>
@@ -428,25 +428,25 @@ export default function SemanticSearchPage() {
                 aria-live="polite"
                 className="rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50 dark:bg-blue-950/30 p-4 space-y-2"
               >
-                <p className="text-sm font-medium">Preparando este dataset para búsqueda semántica</p>
+                <p className="text-sm font-medium">Preparing this dataset for semantic search</p>
                 <p className="text-xs text-zinc-600 dark:text-zinc-300">
                   {indexing.status
                     ? INDEXING_COPY[indexing.status]
-                    : "La indexación vectors empieza con la primera búsqueda."}{" "}
-                  Puede tardar unos minutos según su tamaño. Tu pregunta sigue siendo válida: la
-                  búsqueda se repetirá sola en cuanto el dataset esté listo.
+                    : "Indexing starts with the first search."}{" "}
+                  It can take a few minutes depending on its size. Your question is still valid: the
+                  search will repeat on its own as soon as the dataset is ready.
                 </p>
                 <p className="text-xs text-zinc-500">
                   {exhausted
-                    ? "Seguimos esperando al servidor. Puedes reintentar cuando quieras."
-                    : `Reintento automático cada ${POLL_INTERVAL_MS / 1000} s (intento ${indexing.attempt} de ${MAX_POLL_ATTEMPTS}).`}
+                    ? "We are still waiting for the server. You can retry whenever you like."
+                    : `Automatic retry every ${POLL_INTERVAL_MS / 1000} s (attempt ${indexing.attempt} of ${MAX_POLL_ATTEMPTS}).`}
                 </p>
                 <button
                   type="button"
                   onClick={retryRequest}
                   className="rounded-full border border-blue-300 dark:border-blue-800 px-4 py-1.5 text-xs hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
                 >
-                  Reintentar ahora
+                  Retry now
                 </button>
               </section>
             )}
@@ -456,7 +456,7 @@ export default function SemanticSearchPage() {
                 aria-live="polite"
                 className="text-xs text-emerald-700 dark:text-emerald-400"
               >
-                Búsqueda semántica lista.
+                Semantic search is ready.
               </p>
             )}
 
@@ -465,62 +465,79 @@ export default function SemanticSearchPage() {
                 aria-live="polite"
                 className="rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-950/30 p-4 space-y-1"
               >
-                <p className="text-sm font-medium">Revisa los campos marcados.</p>
+                <p className="text-sm font-medium">Check the highlighted fields.</p>
                 {problem.detail && <p className="text-xs text-zinc-600 dark:text-zinc-300">{problem.detail}</p>}
               </section>
             )}
 
             {problem?.kind === "business-rule" && (
               <section className="rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 space-y-2">
-                <p className="text-sm font-medium">No pudimos ejecutar esta búsqueda.</p>
+                <p className="text-sm font-medium">We could not run this search.</p>
                 <p className="text-xs text-zinc-500">{problem.detail}</p>
                 {canSearchSemantically && (
                   <Link
                     href={`/datasets/${id}/query`}
                     className="inline-block text-xs underline underline-offset-4 hover:text-foreground transition-colors"
                   >
-                    Probar con la consulta estructurada
+                    Try the structured query instead
                   </Link>
                 )}
               </section>
             )}
 
+            {problem?.kind === "rate-limited" && (
+              <section
+                role="alert"
+                className="rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-950/30 p-4 space-y-2"
+              >
+                <p className="text-sm font-medium">Too many requests.</p>
+                <p className="text-xs text-zinc-600 dark:text-zinc-300">{problem.detail}</p>
+                <button
+                  type="button"
+                  onClick={retryRequest}
+                  className="rounded-full border border-amber-300 dark:border-amber-800 px-4 py-1.5 text-xs hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
+                >
+                  Retry
+                </button>
+              </section>
+            )}
+
             {problem?.kind === "server-error" && (
               <section className="rounded-xl border border-red-200 dark:border-red-900/60 bg-red-50 dark:bg-red-950/30 p-4 space-y-2">
-                <p className="text-sm font-medium">Algo falló de nuestro lado.</p>
+                <p className="text-sm font-medium">Something went wrong on our side.</p>
                 <p className="text-xs text-zinc-600 dark:text-zinc-300">
-                  {problem.detail || "No pudimos completar la búsqueda. Vuelve a intentarlo."}
+                  {problem.detail || "We could not complete the search. Please try again."}
                 </p>
                 <button
                   type="button"
                   onClick={retryRequest}
                   className="rounded-full border border-red-300 dark:border-red-800 px-4 py-1.5 text-xs hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
                 >
-                  Reintentar
+                  Retry
                 </button>
               </section>
             )}
 
             {problem?.kind === "not-found" && (
               <section className="rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 space-y-2">
-                <p className="text-sm font-medium">No encontramos este dataset.</p>
+                <p className="text-sm font-medium">We could not find this dataset.</p>
                 <Link
                   href="/datasets"
                   className="inline-block text-xs underline underline-offset-4 hover:text-foreground transition-colors"
                 >
-                  Volver a mis datasets
+                  Back to my datasets
                 </Link>
               </section>
             )}
 
             {problem?.kind === "unauthorized" && (
               <section className="rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 space-y-2">
-                <p className="text-sm font-medium">Tu sesión expiró.</p>
+                <p className="text-sm font-medium">Your session has expired.</p>
                 <Link
                   href="/login"
                   className="inline-block text-xs underline underline-offset-4 hover:text-foreground transition-colors"
                 >
-                  Volver a iniciar sesión
+                  Sign in again
                 </Link>
               </section>
             )}
@@ -532,18 +549,17 @@ export default function SemanticSearchPage() {
         {loadState === "ready" && !canSearchSemantically && !unavailable && (
           <section className="rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 space-y-2">
             <p className="text-sm font-medium">
-              Este dataset no tiene columnas de texto, así que no admite búsqueda semántica.
+              This dataset has no text columns, so it does not support semantic search.
             </p>
             <p className="text-xs text-zinc-500">
-              La búsqueda semántica necesita texto para comparar significado. Para este dataset
-              conviene la{" "}
+              Semantic search needs text to compare meaning. For this dataset, the{" "}
               <Link
                 href={`/datasets/${id}/query`}
                 className="underline underline-offset-4 hover:text-foreground transition-colors"
               >
-                consulta estructurada
+                structured query
               </Link>
-              , que responde preguntas de agregación, conteos y filtros.
+              {" "}is a better fit: it answers aggregation, count and filter questions.
             </p>
           </section>
         )}

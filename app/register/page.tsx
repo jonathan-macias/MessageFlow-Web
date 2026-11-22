@@ -29,7 +29,7 @@ export default function RegisterPage() {
       router.replace("/");
     } catch (err) {
       const e = err as { detail?: string };
-      setError(e.detail ?? "Error al registrarse.");
+      setError(e.detail ?? "Failed to create the account.");
     } finally {
       setIsSubmitting(false);
     }
@@ -38,7 +38,7 @@ export default function RegisterPage() {
   return (
     <div className="flex flex-1 items-center justify-center bg-zinc-50 dark:bg-black px-4">
       <div className="w-full max-w-sm space-y-6">
-        <h1 className="text-2xl font-bold text-center">Crear cuenta</h1>
+        <h1 className="text-2xl font-bold text-center">Create account</h1>
 
         {error && (
           <p className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 rounded p-2 text-center">
@@ -49,7 +49,7 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="name" className="block text-sm font-medium mb-1">
-              Nombre
+              Name
             </label>
             <input
               id="name"
@@ -75,7 +75,7 @@ export default function RegisterPage() {
           </div>
           <div>
             <label htmlFor="password" className="block text-sm font-medium mb-1">
-              Contrasena
+              Password
             </label>
             <input
               id="password"
@@ -91,14 +91,14 @@ export default function RegisterPage() {
             disabled={isSubmitting}
             className="w-full rounded bg-foreground py-2 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
           >
-            {isSubmitting ? "Creando cuenta..." : "Crear cuenta"}
+            {isSubmitting ? "Creating account..." : "Create account"}
           </button>
         </form>
 
         <p className="text-center text-sm text-zinc-500">
-          Ya tienes cuenta?{" "}
+          Already have an account?{" "}
           <a href="/login" className="font-medium text-foreground underline">
-            Inicia sesion
+            Sign in
           </a>
         </p>
       </div>

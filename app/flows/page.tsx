@@ -34,7 +34,7 @@ export default function FlowsPage() {
         setTotalPages(data.totalPages);
         setTotalCount(data.totalCount);
       })
-      .catch((err) => { if (!cancelled) setError(err.detail ?? "Error al cargar flujos."); })
+      .catch((err) => { if (!cancelled) setError(err.detail ?? "Failed to load flows."); })
       .finally(() => { if (!cancelled) setIsLoadingData(false); });
     return () => { cancelled = true; };
   }, [isAuthenticated, page]);
@@ -50,7 +50,7 @@ export default function FlowsPage() {
             href="/flows/new"
             className="rounded bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"
           >
-            Crear flow
+            Create flow
           </Link>
         </div>
 
@@ -61,20 +61,20 @@ export default function FlowsPage() {
         )}
 
         {isLoadingData ? (
-          <p className="text-zinc-500">Cargando...</p>
+          <p className="text-zinc-500">Loading...</p>
         ) : flows.length === 0 ? (
-          <p className="text-zinc-500">No hay flows.</p>
+          <p className="text-zinc-500">No flows yet.</p>
         ) : (
           <>
             <div className="overflow-x-auto rounded border border-black/10 dark:border-white/10">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-zinc-100 dark:bg-zinc-800">
-                    <th className="px-4 py-3 text-left font-medium">Nombre</th>
-                    <th className="px-4 py-3 text-left font-medium">Estado</th>
-                    <th className="px-4 py-3 text-left font-medium">Canal</th>
-                    <th className="px-4 py-3 text-left font-medium">Ejecucion</th>
-                    <th className="px-4 py-3 text-left font-medium">Creado</th>
+                    <th className="px-4 py-3 text-left font-medium">Name</th>
+                    <th className="px-4 py-3 text-left font-medium">Status</th>
+                    <th className="px-4 py-3 text-left font-medium">Channel</th>
+                    <th className="px-4 py-3 text-left font-medium">Execution</th>
+                    <th className="px-4 py-3 text-left font-medium">Created</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -102,7 +102,7 @@ export default function FlowsPage() {
                         {ExecutionType[flow.executionType] ?? flow.executionType}
                       </td>
                       <td className="px-4 py-3 text-zinc-500">
-                        {new Date(flow.createdAtUtc).toLocaleDateString()}
+                        {new Date(flow.createdAtUtc).toLocaleDateString("en-US")}
                       </td>
                     </tr>
                   ))}
@@ -117,17 +117,17 @@ export default function FlowsPage() {
                   disabled={page === 1}
                   className="rounded border border-black/10 dark:border-white/10 px-3 py-1 text-sm disabled:opacity-50"
                 >
-                  Anterior
+                  Previous
                 </button>
                 <span className="text-sm text-zinc-500">
-                  Pagina {page} de {totalPages} ({totalCount} total)
+                  Page {page} of {totalPages} ({totalCount} total)
                 </span>
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
                   className="rounded border border-black/10 dark:border-white/10 px-3 py-1 text-sm disabled:opacity-50"
                 >
-                  Siguiente
+                  Next
                 </button>
               </div>
             )}

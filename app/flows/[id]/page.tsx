@@ -100,7 +100,7 @@ export default function FlowDetailPage() {
         return getDatasetColumns(f.datasetId);
       })
       .then((cols) => { if (!cancelled && cols) setColumns(cols); })
-      .catch((err) => { if (!cancelled) setError(err.detail ?? "Error al cargar flow."); })
+      .catch((err) => { if (!cancelled) setError(err.detail ?? "Failed to load the flow."); })
       .finally(() => { if (!cancelled) setIsLoadingData(false); });
     return () => { cancelled = true; };
   }, [isAuthenticated, id, loadFlow]);
@@ -135,17 +135,17 @@ export default function FlowDetailPage() {
     setTimeout(() => setSuccess(null), 3000);
   }
 
-  function act(label: string, fn: () => Promise<void>) {
+  function act(label: string, doneMessage: string, fn: () => Promise<void>) {
     return async () => {
       setActionLoading(label);
       setError(null);
       try {
         await fn();
         await loadFlow();
-        msg(label + " OK");
+        msg(doneMessage);
       } catch (err) {
         const e = err as { detail?: string };
-        setError(e.detail ?? `Error al ${label.toLowerCase()}.`);
+        setError(e.detail ?? `Failed to ${label.toLowerCase()}.`);
       } finally {
         setActionLoading(null);
       }
@@ -153,7 +153,7 @@ export default function FlowDetailPage() {
   }
 
   async function handleSaveInfo() {
-    setActionLoading("guardar");
+    setActionLoading("save");
     setError(null);
     try {
       const schedule: ScheduleRequest = {
@@ -169,25 +169,25 @@ export default function FlowDetailPage() {
       }
       await updateFlow(id, { name: editName, description: editDesc, schedule });
       await loadFlow();
-      msg("Informacion actualizada");
+      msg("Information updated");
     } catch (err) {
       const e = err as { detail?: string };
-      setError(e.detail ?? "Error al guardar.");
+      setError(e.detail ?? "Failed to save.");
     } finally {
       setActionLoading(null);
     }
   }
 
   async function handleSaveMessage() {
-    setActionLoading("mensaje");
+    setActionLoading("message");
     setError(null);
     try {
       await updateFlowMessage(id, { message: messageText });
       await loadFlow();
-      msg("Mensaje actualizado");
+      msg("Message updated");
     } catch (err) {
       const e = err as { detail?: string };
-      setError(e.detail ?? "Error al guardar mensaje.");
+      setError(e.detail ?? "Failed to save the message.");
     } finally {
       setActionLoading(null);
     }
@@ -196,7 +196,7 @@ export default function FlowDetailPage() {
   async function handleGenerateAI() {
     if (!flow) return;
     if (!aiDescription.trim()) {
-      setAiError("Escribe una descripcion del mensaje.");
+      setAiError("Enter a description of the message.");
       return;
     }
     setIsGenerating(true);
@@ -208,17 +208,17 @@ export default function FlowDetailPage() {
         datasetId: flow.datasetId,
       });
       setMessageText(result.messageTemplate);
-      msg("Mensaje generado con IA");
+      msg("Message generated with AI");
     } catch (err) {
       const e = err as { detail?: string };
-      setAiError(e.detail ?? "Error al generar el mensaje.");
+      setAiError(e.detail ?? "Failed to generate the message.");
     } finally {
       setIsGenerating(false);
     }
   }
 
   async function handleSaveFilter() {
-    setActionLoading("filtro");
+    setActionLoading("filter");
     setError(null);
     try {
       let parsed: FlowFilter | null = null;
@@ -227,10 +227,10 @@ export default function FlowDetailPage() {
       }
       await updateFlowFilter(id, parsed);
       await loadFlow();
-      msg("Filtro actualizado");
+      msg("Filter updated");
     } catch (err) {
       const e = err as { detail?: string };
-      setError(e.detail ?? "Error al guardar filtro.");
+      setError(e.detail ?? "Failed to save the filter.");
     } finally {
       setActionLoading(null);
     }
@@ -253,7 +253,7 @@ export default function FlowDetailPage() {
       setPreviewResult(result);
     } catch (err) {
       const e = err as { detail?: string };
-      setError(e.detail ?? "Error al previsualizar.");
+      setError(e.detail ?? "Failed to preview.");
     } finally {
       setActionLoading(null);
     }
@@ -275,7 +275,7 @@ export default function FlowDetailPage() {
       setFilterPreviewResult(result);
     } catch (err) {
       const e = err as { detail?: string };
-      setError(e.detail ?? "Error al previsualizar filtro.");
+      setError(e.detail ?? "Failed to preview the filter.");
     } finally {
       setActionLoading(null);
     }
@@ -286,15 +286,15 @@ export default function FlowDetailPage() {
   }
 
   async function handleDelete() {
-    if (!confirm("Eliminar este flow?")) return;
-    setActionLoading("eliminar");
+    if (!confirm("Delete this flow?")) return;
+    setActionLoading("delete");
     setError(null);
     try {
       await deleteFlow(id);
       router.push("/flows");
     } catch (err) {
       const e = err as { detail?: string };
-      setError(e.detail ?? "Error al eliminar.");
+      setError(e.detail ?? "Failed to delete.");
     } finally {
       setActionLoading(null);
     }
@@ -303,7 +303,7 @@ export default function FlowDetailPage() {
   if (isLoadingData) {
     return (
       <div className="flex flex-1 items-center justify-center bg-zinc-50 dark:bg-black">
-        <p className="text-zinc-500">Cargando...</p>
+        <p className="text-zinc-500">Loading...</p>
       </div>
     );
   }
@@ -311,7 +311,7 @@ export default function FlowDetailPage() {
   if (!flow) {
     return (
       <div className="flex flex-1 items-center justify-center bg-zinc-50 dark:bg-black">
-        <p className="text-red-500">Flow no encontrado.</p>
+        <p className="text-red-500">Flow not found.</p>
       </div>
     );
   }
@@ -324,9 +324,9 @@ export default function FlowDetailPage() {
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "info", label: "Info" },
-    { key: "message", label: "Mensaje" },
-    { key: "filter", label: "Filtro" },
-    { key: "executions", label: "Ejecuciones" },
+    { key: "message", label: "Message" },
+    { key: "filter", label: "Filter" },
+    { key: "executions", label: "Executions" },
     { key: "preview", label: "Preview" },
   ];
 
@@ -356,33 +356,33 @@ export default function FlowDetailPage() {
         {/* Actions bar */}
         <div className="flex flex-wrap gap-2">
           {canActivate && (
-            <button onClick={act("Activar", () => activateFlow(id))} disabled={actionLoading === "Activar"}
+            <button onClick={act("Activate", "Flow activated", () => activateFlow(id))} disabled={actionLoading === "Activate"}
               className="rounded bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50">
-              {actionLoading === "Activar" ? "..." : "Activar"}
+              {actionLoading === "Activate" ? "..." : "Activate"}
             </button>
           )}
           {canPause && (
-            <button onClick={act("Pausar", () => pauseFlow(id))} disabled={actionLoading === "Pausar"}
+            <button onClick={act("Pause", "Flow paused", () => pauseFlow(id))} disabled={actionLoading === "Pause"}
               className="rounded bg-yellow-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-yellow-600 disabled:opacity-50">
-              {actionLoading === "Pausar" ? "..." : "Pausar"}
+              {actionLoading === "Pause" ? "..." : "Pause"}
             </button>
           )}
           {canArchive && (
-            <button onClick={act("Archivar", () => archiveFlow(id))} disabled={actionLoading === "Archivar"}
+            <button onClick={act("Archive", "Flow archived", () => archiveFlow(id))} disabled={actionLoading === "Archive"}
               className="rounded bg-zinc-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-600 disabled:opacity-50">
-              {actionLoading === "Archivar" ? "..." : "Archivar"}
+              {actionLoading === "Archive" ? "..." : "Archive"}
             </button>
           )}
           {canExecute && (
-            <button onClick={act("Ejecutar", async () => { await executeFlow(id); })} disabled={actionLoading === "Ejecutar"}
+            <button onClick={act("Run", "Execution started", async () => { await executeFlow(id); })} disabled={actionLoading === "Run"}
               className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50">
-              {actionLoading === "Ejecutar" ? "..." : "Ejecutar ahora"}
+              {actionLoading === "Run" ? "..." : "Run now"}
             </button>
           )}
           {canDelete && (
-            <button onClick={handleDelete} disabled={actionLoading === "eliminar"}
+            <button onClick={handleDelete} disabled={actionLoading === "delete"}
               className="rounded bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50">
-              {actionLoading === "eliminar" ? "..." : "Eliminar"}
+              {actionLoading === "delete" ? "..." : "Delete"}
             </button>
           )}
         </div>
@@ -409,17 +409,17 @@ export default function FlowDetailPage() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div className="rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-3">
-                <p className="text-zinc-500">Canal</p>
+                <p className="text-zinc-500">Channel</p>
                 <p className="font-medium">{ChannelType[flow.channel] ?? flow.channel}</p>
               </div>
               <div className="rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-3">
-                <p className="text-zinc-500">Creado</p>
-                <p className="font-medium">{new Date(flow.createdAtUtc).toLocaleDateString()}</p>
+                <p className="text-zinc-500">Created</p>
+                <p className="font-medium">{new Date(flow.createdAtUtc).toLocaleDateString("en-US")}</p>
               </div>
             </div>
 
             <div className="rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 space-y-3">
-              <h3 className="text-sm font-semibold">Nombre y descripcion</h3>
+              <h3 className="text-sm font-semibold">Name and description</h3>
               <input
                 type="text"
                 value={editName}
@@ -435,10 +435,10 @@ export default function FlowDetailPage() {
             </div>
 
             <div className="rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 space-y-3">
-              <h3 className="text-sm font-semibold">Programacion</h3>
+              <h3 className="text-sm font-semibold">Scheduling</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-zinc-500 mb-1">Tipo de ejecucion</label>
+                  <label className="block text-xs text-zinc-500 mb-1">Execution type</label>
                   <select
                     value={editScheduleType}
                     onChange={(e) => setEditScheduleType(Number(e.target.value))}
@@ -451,7 +451,7 @@ export default function FlowDetailPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-zinc-500 mb-1">Zona horaria</label>
+                  <label className="block text-xs text-zinc-500 mb-1">Time zone</label>
                   <select
                     value={editTimeZone}
                     onChange={(e) => setEditTimeZone(e.target.value)}
@@ -466,7 +466,7 @@ export default function FlowDetailPage() {
 
               {editScheduleType === 1 && (
                 <div>
-                  <label className="block text-xs text-zinc-500 mb-1">Fecha y hora de ejecucion</label>
+                  <label className="block text-xs text-zinc-500 mb-1">Run date and time</label>
                   <input
                     type="datetime-local"
                     value={editRunAtUtc}
@@ -479,7 +479,7 @@ export default function FlowDetailPage() {
               {editScheduleType === 2 && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs text-zinc-500 mb-1">Hora del dia</label>
+                    <label className="block text-xs text-zinc-500 mb-1">Time of day</label>
                     <input
                       type="time"
                       value={editRecTimeOfDay}
@@ -488,7 +488,7 @@ export default function FlowDetailPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-zinc-500 mb-1">Intervalo (dias)</label>
+                    <label className="block text-xs text-zinc-500 mb-1">Interval (days)</label>
                     <input
                       type="number"
                       min={1}
@@ -502,10 +502,10 @@ export default function FlowDetailPage() {
 
               <button
                 onClick={handleSaveInfo}
-                disabled={actionLoading === "guardar"}
+                disabled={actionLoading === "save"}
                 className="rounded bg-foreground px-4 py-1.5 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
               >
-                {actionLoading === "guardar" ? "Guardando..." : "Guardar"}
+                {actionLoading === "save" ? "Saving..." : "Save"}
               </button>
             </div>
           </div>
@@ -516,7 +516,7 @@ export default function FlowDetailPage() {
           <div className="space-y-4">
             {columns.length > 0 && (
               <div>
-                <p className="text-xs text-zinc-500 mb-2">Insertar variable:</p>
+                <p className="text-xs text-zinc-500 mb-2">Insert variable:</p>
                 <div className="flex flex-wrap gap-1.5">
                   {columns.map((col) => (
                     <button
@@ -535,29 +535,29 @@ export default function FlowDetailPage() {
             {/* AI Generator */}
             <div className="rounded border border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-950/20 p-4 space-y-3">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold">Generar con IA</span>
+                <span className="text-sm font-semibold">Generate with AI</span>
                 <span className="text-xs text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 rounded px-1.5 py-0.5">beta</span>
               </div>
               <p className="text-xs text-zinc-500">
-                Describe el mensaje que quieres y la IA lo genera usando las columnas del dataset.
+                Describe the message you want and the AI generates it using the dataset columns.
               </p>
               <textarea
                 rows={2}
                 value={aiDescription}
                 onChange={(e) => setAiDescription(e.target.value)}
-                placeholder="Ej: Un recordatorio amigable de que la factura vence manana."
+                placeholder="e.g. A friendly reminder that the invoice is due tomorrow."
                 className="w-full rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-400"
               />
               <div className="flex items-end gap-3">
                 <div className="flex-1">
-                  <label className="block text-xs text-zinc-500 mb-1">Tono</label>
+                  <label className="block text-xs text-zinc-500 mb-1">Tone</label>
                   <select
                     value={aiTone}
                     onChange={(e) => setAiTone(e.target.value)}
                     className="w-full rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-400"
                   >
-                    <option value="friendly">Amigable</option>
-                    <option value="professional">Profesional</option>
+                    <option value="friendly">Friendly</option>
+                    <option value="professional">Professional</option>
                     <option value="formal">Formal</option>
                     <option value="casual">Casual</option>
                   </select>
@@ -568,7 +568,7 @@ export default function FlowDetailPage() {
                   disabled={isGenerating}
                   className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
                 >
-                  {isGenerating ? "Generando..." : "Generar"}
+                  {isGenerating ? "Generating..." : "Generate"}
                 </button>
               </div>
               {aiError && (
@@ -584,10 +584,10 @@ export default function FlowDetailPage() {
             />
             <button
               onClick={handleSaveMessage}
-              disabled={actionLoading === "mensaje"}
+              disabled={actionLoading === "message"}
               className="rounded bg-foreground px-4 py-1.5 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
             >
-              {actionLoading === "mensaje" ? "Guardando..." : "Guardar mensaje"}
+              {actionLoading === "message" ? "Saving..." : "Save message"}
             </button>
           </div>
         )}
@@ -596,9 +596,9 @@ export default function FlowDetailPage() {
         {activeTab === "filter" && (
           <div className="space-y-4">
             <div className="rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 space-y-3">
-              <h3 className="text-sm font-semibold">Filtro JSON</h3>
+              <h3 className="text-sm font-semibold">Filter JSON</h3>
               <p className="text-xs text-zinc-500">
-                Operadores: {Object.entries(FilterOperator).map(([k, v]) => `${k}=${v}`).join(", ")}
+                Operators: {Object.entries(FilterOperator).map(([k, v]) => `${k}=${v}`).join(", ")}
               </p>
               <textarea
                 rows={8}
@@ -610,24 +610,24 @@ export default function FlowDetailPage() {
               <div className="flex gap-2">
                 <button
                   onClick={handleSaveFilter}
-                  disabled={actionLoading === "filtro"}
+                  disabled={actionLoading === "filter"}
                   className="rounded bg-foreground px-4 py-1.5 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
                 >
-                  {actionLoading === "filtro" ? "Guardando..." : "Guardar filtro"}
+                  {actionLoading === "filter" ? "Saving..." : "Save filter"}
                 </button>
                 <button
                   onClick={() => { setFilterText(""); }}
                   className="rounded border border-black/10 dark:border-white/10 px-4 py-1.5 text-sm font-medium hover:bg-black/[.04] dark:hover:bg-[#1a1a1a]"
                 >
-                  Limpiar
+                  Clear
                 </button>
               </div>
             </div>
 
             <div className="rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 space-y-3">
-              <h3 className="text-sm font-semibold">Preview del filtro</h3>
+              <h3 className="text-sm font-semibold">Filter preview</h3>
               <div className="flex items-center gap-2">
-                <label className="text-sm">Limite de muestras:</label>
+                <label className="text-sm">Sample limit:</label>
                 <input
                   type="number"
                   min={1}
@@ -640,12 +640,12 @@ export default function FlowDetailPage() {
                   disabled={actionLoading === "preview-filter"}
                   className="rounded bg-foreground px-4 py-1.5 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
                 >
-                  {actionLoading === "preview-filter" ? "Cargando..." : "Previsualizar"}
+                  {actionLoading === "preview-filter" ? "Loading..." : "Preview"}
                 </button>
               </div>
               {filterPreviewResult && (
                 <div className="space-y-2">
-                  <p className="text-sm">Filas que coinciden: <strong>{filterPreviewResult.matchingRowCount}</strong></p>
+                  <p className="text-sm">Matching rows: <strong>{filterPreviewResult.matchingRowCount}</strong></p>
                   {filterPreviewResult.sampleRows.length > 0 && (
                     <div className="overflow-x-auto">
                       <table className="w-full text-xs">
@@ -680,20 +680,20 @@ export default function FlowDetailPage() {
         {activeTab === "executions" && (
           <div className="space-y-4">
             {executions.length === 0 ? (
-              <p className="text-zinc-500 text-sm">No hay ejecuciones.</p>
+              <p className="text-zinc-500 text-sm">No executions yet.</p>
             ) : (
               <>
                 <div className="overflow-x-auto rounded border border-black/10 dark:border-white/10">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-zinc-100 dark:bg-zinc-800">
-                        <th className="px-3 py-2 text-left font-medium">Estado</th>
-                        <th className="px-3 py-2 text-left font-medium">Origen</th>
-                        <th className="px-3 py-2 text-left font-medium">Inicio</th>
-                        <th className="px-3 py-2 text-left font-medium">Fin</th>
-                        <th className="px-3 py-2 text-left font-medium">Registros</th>
-                        <th className="px-3 py-2 text-left font-medium">Exitosos</th>
-                        <th className="px-3 py-2 text-left font-medium">Fallidos</th>
+                        <th className="px-3 py-2 text-left font-medium">Status</th>
+                        <th className="px-3 py-2 text-left font-medium">Source</th>
+                        <th className="px-3 py-2 text-left font-medium">Started</th>
+                        <th className="px-3 py-2 text-left font-medium">Finished</th>
+                        <th className="px-3 py-2 text-left font-medium">Records</th>
+                        <th className="px-3 py-2 text-left font-medium">Successful</th>
+                        <th className="px-3 py-2 text-left font-medium">Failed</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -719,8 +719,8 @@ export default function FlowDetailPage() {
                             </span>
                           </td>
                           <td className="px-3 py-2 text-xs">{TriggerSource[ex.triggerSource] ?? ex.triggerSource}</td>
-                          <td className="px-3 py-2 text-xs">{new Date(ex.startedAtUtc).toLocaleString()}</td>
-                          <td className="px-3 py-2 text-xs">{ex.completedAtUtc ? new Date(ex.completedAtUtc).toLocaleString() : "—"}</td>
+                          <td className="px-3 py-2 text-xs">{new Date(ex.startedAtUtc).toLocaleString("en-US")}</td>
+                          <td className="px-3 py-2 text-xs">{ex.completedAtUtc ? new Date(ex.completedAtUtc).toLocaleString("en-US") : "—"}</td>
                           <td className="px-3 py-2">{ex.processedRecords}/{ex.totalRecords}</td>
                           <td className="px-3 py-2 text-green-600">{ex.successfulRecords}</td>
                           <td className="px-3 py-2 text-red-600">{ex.failedRecords}</td>
@@ -733,11 +733,11 @@ export default function FlowDetailPage() {
                 {selectedExecId && (
                   <div className="rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold">Detalle de ejecucion</h3>
-                      <button onClick={() => setSelectedExecId(null)} className="text-xs text-zinc-500 hover:underline">Cerrar</button>
+                      <h3 className="text-sm font-semibold">Execution details</h3>
+                      <button onClick={() => setSelectedExecId(null)} className="text-xs text-zinc-500 hover:underline">Close</button>
                     </div>
                     {isLoadingExecDetail ? (
-                      <p className="text-sm text-zinc-500">Cargando...</p>
+                      <p className="text-sm text-zinc-500">Loading...</p>
                     ) : execDetail ? (
                       <div className="space-y-3">
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
@@ -750,28 +750,28 @@ export default function FlowDetailPage() {
                             <p className="font-mono break-all">{execDetail.idempotencyKey}</p>
                           </div>
                           <div>
-                            <p className="text-zinc-500">Tipo</p>
+                            <p className="text-zinc-500">Type</p>
                             <p>{ExecutionType[execDetail.executionType] ?? execDetail.executionType}</p>
                           </div>
                           <div>
-                            <p className="text-zinc-500">Estado</p>
+                            <p className="text-zinc-500">Status</p>
                             <p>{ExecutionStatus[execDetail.status] ?? execDetail.status}</p>
                           </div>
                           <div>
-                            <p className="text-zinc-500">Origen</p>
+                            <p className="text-zinc-500">Source</p>
                             <p>{TriggerSource[execDetail.triggerSource] ?? execDetail.triggerSource}</p>
                           </div>
                           <div>
-                            <p className="text-zinc-500">Inicio</p>
-                            <p>{new Date(execDetail.startedAtUtc).toLocaleString()}</p>
+                            <p className="text-zinc-500">Started</p>
+                            <p>{new Date(execDetail.startedAtUtc).toLocaleString("en-US")}</p>
                           </div>
                           <div>
-                            <p className="text-zinc-500">Fin</p>
-                            <p>{execDetail.completedAtUtc ? new Date(execDetail.completedAtUtc).toLocaleString() : "—"}</p>
+                            <p className="text-zinc-500">Finished</p>
+                            <p>{execDetail.completedAtUtc ? new Date(execDetail.completedAtUtc).toLocaleString("en-US") : "—"}</p>
                           </div>
                           <div>
-                            <p className="text-zinc-500">Registros</p>
-                            <p>{execDetail.processedRecords}/{execDetail.totalRecords} ({execDetail.successfulRecords} ok, {execDetail.failedRecords} fallo)</p>
+                            <p className="text-zinc-500">Records</p>
+                            <p>{execDetail.processedRecords}/{execDetail.totalRecords} ({execDetail.successfulRecords} ok, {execDetail.failedRecords} failed)</p>
                           </div>
                         </div>
                         {execDetail.errorMessage && (
@@ -782,7 +782,7 @@ export default function FlowDetailPage() {
                         )}
                       </div>
                     ) : (
-                      <p className="text-sm text-red-500">No se pudo cargar el detalle.</p>
+                      <p className="text-sm text-red-500">Could not load the details.</p>
                     )}
                   </div>
                 )}
@@ -790,10 +790,10 @@ export default function FlowDetailPage() {
                 {execTotalPages > 1 && (
                   <div className="flex items-center justify-center gap-2">
                     <button onClick={() => setExecPage((p) => Math.max(1, p - 1))} disabled={execPage === 1}
-                      className="rounded border border-black/10 dark:border-white/10 px-3 py-1 text-sm disabled:opacity-50">Anterior</button>
-                    <span className="text-sm text-zinc-500">Pagina {execPage} de {execTotalPages}</span>
+                      className="rounded border border-black/10 dark:border-white/10 px-3 py-1 text-sm disabled:opacity-50">Previous</button>
+                    <span className="text-sm text-zinc-500">Page {execPage} of {execTotalPages}</span>
                     <button onClick={() => setExecPage((p) => Math.min(execTotalPages, p + 1))} disabled={execPage === execTotalPages}
-                      className="rounded border border-black/10 dark:border-white/10 px-3 py-1 text-sm disabled:opacity-50">Siguiente</button>
+                      className="rounded border border-black/10 dark:border-white/10 px-3 py-1 text-sm disabled:opacity-50">Next</button>
                   </div>
                 )}
               </>
@@ -805,24 +805,24 @@ export default function FlowDetailPage() {
         {activeTab === "preview" && (
           <div className="space-y-4">
             <div className="rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 space-y-3">
-              <h3 className="text-sm font-semibold">Preview de mensaje</h3>
+              <h3 className="text-sm font-semibold">Message preview</h3>
               <div>
-                <label className="block text-xs text-zinc-500 mb-1">Dataset Row ID (opcional)</label>
+                <label className="block text-xs text-zinc-500 mb-1">Dataset Row ID (optional)</label>
                 <input
                   type="text"
                   value={previewRowId}
                   onChange={(e) => setPreviewRowId(e.target.value)}
-                  placeholder="UUID de una fila del dataset"
+                  placeholder="UUID of a dataset row"
                   className="w-full rounded border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-zinc-400"
                 />
               </div>
               <div>
-                <label className="block text-xs text-zinc-500 mb-1">Valores de ejemplo (JSON)</label>
+                <label className="block text-xs text-zinc-500 mb-1">Sample values (JSON)</label>
                 <textarea
                   rows={3}
                   value={previewSampleValues}
                   onChange={(e) => setPreviewSampleValues(e.target.value)}
-                  placeholder='{"Nombre": "Carlos", "Correo": "carlos@test.com"}'
+                  placeholder='{"Name": "Carlos", "Email": "carlos@test.com"}'
                   className="w-full rounded border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-800 px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-zinc-400"
                 />
               </div>
@@ -831,7 +831,7 @@ export default function FlowDetailPage() {
                 disabled={actionLoading === "preview-msg"}
                 className="rounded bg-foreground px-4 py-1.5 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
               >
-                {actionLoading === "preview-msg" ? "Cargando..." : "Previsualizar"}
+                {actionLoading === "preview-msg" ? "Loading..." : "Preview"}
               </button>
 
               {previewResult && (
@@ -839,7 +839,7 @@ export default function FlowDetailPage() {
                   <p className="text-sm font-mono whitespace-pre-wrap">{previewResult.renderedMessage}</p>
                   {previewResult.missingVariables.length > 0 && (
                     <p className="text-xs text-yellow-600">
-                      Variables faltantes: {previewResult.missingVariables.join(", ")}
+                      Missing variables: {previewResult.missingVariables.join(", ")}
                     </p>
                   )}
                 </div>

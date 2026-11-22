@@ -28,7 +28,7 @@ export default function UploadDatasetPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!file) {
-      setError("Selecciona un archivo.");
+      setError("Select a file.");
       return;
     }
     setIsSubmitting(true);
@@ -38,7 +38,7 @@ export default function UploadDatasetPage() {
       router.push(`/datasets/${result.id}`);
     } catch (err) {
       const e = err as { detail?: string };
-      setError(e.detail ?? "Error al subir dataset.");
+      setError(e.detail ?? "Failed to upload the dataset.");
     } finally {
       setIsSubmitting(false);
     }
@@ -49,9 +49,9 @@ export default function UploadDatasetPage() {
       <div className="w-full max-w-lg mx-auto py-10 px-4 space-y-6">
         <Breadcrumbs items={[
           { label: "Datasets", href: "/datasets" },
-          { label: "Subir dataset" },
+          { label: "Upload dataset" },
         ]} />
-        <h1 className="text-2xl font-bold">Subir dataset</h1>
+        <h1 className="text-2xl font-bold">Upload dataset</h1>
 
         {error && (
           <p className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 rounded p-2">
@@ -62,7 +62,7 @@ export default function UploadDatasetPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="file" className="block text-sm font-medium mb-1">
-              Archivo (Excel)
+              File (Excel)
             </label>
             <input
               ref={fileInputRef}
@@ -76,7 +76,7 @@ export default function UploadDatasetPage() {
           </div>
           <div>
             <label htmlFor="ds-name" className="block text-sm font-medium mb-1">
-              Nombre del dataset
+              Dataset name
             </label>
             <input
               id="ds-name"
@@ -89,7 +89,7 @@ export default function UploadDatasetPage() {
           </div>
           <div>
             <label htmlFor="phone-col" className="block text-sm font-medium mb-1">
-              Columna de telefono
+              Phone column
             </label>
             <input
               id="phone-col"
@@ -97,7 +97,7 @@ export default function UploadDatasetPage() {
               required
               value={phoneColumn}
               onChange={(e) => setPhoneColumn(e.target.value)}
-              placeholder="Nombre exacto de la columna"
+              placeholder="Exact column name"
               className="w-full rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
             />
           </div>
@@ -106,7 +106,7 @@ export default function UploadDatasetPage() {
             disabled={isSubmitting}
             className="w-full rounded bg-foreground py-2 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
           >
-            {isSubmitting ? "Subiendo..." : "Subir dataset"}
+            {isSubmitting ? "Uploading..." : "Upload dataset"}
           </button>
         </form>
       </div>

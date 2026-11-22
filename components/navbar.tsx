@@ -83,7 +83,7 @@ export function Navbar() {
             {userOpen && (
               <div className="absolute right-0 top-full mt-1 w-48 rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 shadow-lg py-1 text-sm">
                 <div className="px-3 py-2 border-b border-black/5 dark:border-white/5">
-                  <p className="text-xs text-zinc-500">Sesion</p>
+                  <p className="text-xs text-zinc-500">Session</p>
                   <p className="font-medium truncate">{user?.email}</p>
                 </div>
                 <button
@@ -94,7 +94,7 @@ export function Navbar() {
                   }}
                   className="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
                 >
-                  Cerrar sesion
+                  Sign out
                 </button>
               </div>
             )}

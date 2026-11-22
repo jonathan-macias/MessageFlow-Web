@@ -8,6 +8,8 @@ import type {
 export const SEMANTIC_INDEXING_CODE = "semantic_search_indexing";
 export const SEMANTIC_VALIDATION_CODE = "validation_failed";
 
+const RATE_LIMITED_FALLBACK = "Too many requests. Please wait a moment and try again.";
+
 export type SemanticSearchOutcome =
   | { kind: "success"; response: SemanticSearchResponse }
   | { kind: "indexing"; indexingStatus: SemanticIndexingStatus | null }
@@ -16,6 +18,7 @@ export type SemanticSearchOutcome =
   | { kind: "not-found" }
   | { kind: "unavailable"; detail: string }
   | { kind: "unauthorized" }
+  | { kind: "rate-limited"; detail: string }
   | { kind: "server-error"; detail: string };
 
 interface ProblemLike {
@@ -93,6 +96,10 @@ export function toSemanticSearchOutcome(error: unknown): SemanticSearchOutcome {
 
   if (status === 401) {
     return { kind: "unauthorized" };
+  }
+
+  if (status === 429) {
+    return { kind: "rate-limited", detail: detail || RATE_LIMITED_FALLBACK };
   }
 
   return { kind: "server-error", detail };

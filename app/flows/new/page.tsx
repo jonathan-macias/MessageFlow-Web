@@ -55,7 +55,7 @@ export default function NewFlowPage() {
     if (!isAuthenticated) return;
     getDatasets()
       .then(setDatasets)
-      .catch((err) => setError(err.detail ?? "Error al cargar datasets."))
+      .catch((err) => setError(err.detail ?? "Failed to load datasets."))
       .finally(() => setIsLoadingData(false));
   }, [isAuthenticated]);
 
@@ -77,11 +77,11 @@ export default function NewFlowPage() {
 
   async function handleGenerateAI() {
     if (!selectedDatasetId) {
-      setAiError("Selecciona un dataset primero.");
+      setAiError("Select a dataset first.");
       return;
     }
     if (!aiDescription.trim()) {
-      setAiError("Escribe una descripcion del mensaje.");
+      setAiError("Enter a description of the message.");
       return;
     }
     setIsGenerating(true);
@@ -95,7 +95,7 @@ export default function NewFlowPage() {
       setMessageTemplate(result.messageTemplate);
     } catch (err) {
       const e = err as { detail?: string };
-      setAiError(e.detail ?? "Error al generar el mensaje.");
+      setAiError(e.detail ?? "Failed to generate the message.");
     } finally {
       setIsGenerating(false);
     }
@@ -104,7 +104,7 @@ export default function NewFlowPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedDatasetId) {
-      setError("Selecciona un dataset.");
+      setError("Select a dataset.");
       return;
     }
     setIsSubmitting(true);
@@ -134,7 +134,7 @@ export default function NewFlowPage() {
       router.push(`/flows`);
     } catch (err) {
       const e = err as { detail?: string };
-      setError(e.detail ?? "Error al crear flow.");
+      setError(e.detail ?? "Failed to create the flow.");
     } finally {
       setIsSubmitting(false);
     }
@@ -145,9 +145,9 @@ export default function NewFlowPage() {
       <div className="w-full max-w-2xl mx-auto py-10 px-4 space-y-6">
         <Breadcrumbs items={[
           { label: "Flows", href: "/flows" },
-          { label: "Crear flow" },
+          { label: "Create flow" },
         ]} />
-        <h1 className="text-2xl font-bold">Crear flow</h1>
+        <h1 className="text-2xl font-bold">Create flow</h1>
 
         {error && (
           <p className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 rounded p-2">
@@ -159,11 +159,11 @@ export default function NewFlowPage() {
           {/* Basic info */}
           <div className="space-y-4">
             <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wide">
-              Informacion basica
+              Basic information
             </h2>
             <div>
               <label htmlFor="flow-name" className="block text-sm font-medium mb-1">
-                Nombre
+                Name
               </label>
               <input
                 id="flow-name"
@@ -176,7 +176,7 @@ export default function NewFlowPage() {
             </div>
             <div>
               <label htmlFor="flow-desc" className="block text-sm font-medium mb-1">
-                Descripcion
+                Description
               </label>
               <input
                 id="flow-desc"
@@ -188,7 +188,7 @@ export default function NewFlowPage() {
             </div>
             <div>
               <label htmlFor="flow-channel" className="block text-sm font-medium mb-1">
-                Canal
+                Channel
               </label>
               <select
                 id="flow-channel"
@@ -208,7 +208,7 @@ export default function NewFlowPage() {
             </h2>
             <div>
               <label htmlFor="flow-dataset" className="block text-sm font-medium mb-1">
-                Seleccionar dataset
+                Select dataset
               </label>
               <select
                 id="flow-dataset"
@@ -218,7 +218,7 @@ export default function NewFlowPage() {
                 className="w-full rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
               >
                 <option value="">
-                  {isLoadingData ? "Cargando..." : "Seleccionar..."}
+                  {isLoadingData ? "Loading..." : "Select..."}
                 </option>
                 {datasets.map((ds) => (
                   <option key={ds.id} value={ds.id}>
@@ -232,13 +232,13 @@ export default function NewFlowPage() {
           {/* Message template */}
           <div className="space-y-4">
             <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wide">
-              Mensaje
+              Message
             </h2>
 
             {columns.length > 0 && (
               <div>
                 <p className="text-xs text-zinc-500 mb-2">
-                  Click para insertar una variable en el mensaje:
+                  Click to insert a variable into the message:
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {columns.map((col) => (
@@ -259,29 +259,29 @@ export default function NewFlowPage() {
             {selectedDatasetId && (
               <div className="rounded border border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-950/20 p-4 space-y-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold">Generar con IA</span>
+                  <span className="text-sm font-semibold">Generate with AI</span>
                   <span className="text-xs text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 rounded px-1.5 py-0.5">beta</span>
                 </div>
                 <p className="text-xs text-zinc-500">
-                  Describe el mensaje que quieres y la IA lo genera usando las columnas del dataset.
+                  Describe the message you want and the AI generates it using the dataset columns.
                 </p>
                 <textarea
                   rows={2}
                   value={aiDescription}
                   onChange={(e) => setAiDescription(e.target.value)}
-                  placeholder="Ej: Un recordatorio amigable de que la factura vence manana."
+                  placeholder="e.g. A friendly reminder that the invoice is due tomorrow."
                   className="w-full rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-400"
                 />
                 <div className="flex items-end gap-3">
                   <div className="flex-1">
-                    <label className="block text-xs text-zinc-500 mb-1">Tono</label>
+                    <label className="block text-xs text-zinc-500 mb-1">Tone</label>
                     <select
                       value={aiTone}
                       onChange={(e) => setAiTone(e.target.value)}
                       className="w-full rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-400"
                     >
-                      <option value="friendly">Amigable</option>
-                      <option value="professional">Profesional</option>
+                      <option value="friendly">Friendly</option>
+                      <option value="professional">Professional</option>
                       <option value="formal">Formal</option>
                       <option value="casual">Casual</option>
                     </select>
@@ -292,7 +292,7 @@ export default function NewFlowPage() {
                     disabled={isGenerating}
                     className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
                   >
-                    {isGenerating ? "Generando..." : "Generar"}
+                    {isGenerating ? "Generating..." : "Generate"}
                   </button>
                 </div>
                 {aiError && (
@@ -303,7 +303,7 @@ export default function NewFlowPage() {
 
             <div>
               <label htmlFor="flow-template" className="block text-sm font-medium mb-1">
-                Template del mensaje
+                Message template
               </label>
               <textarea
                 id="flow-template"
@@ -311,11 +311,11 @@ export default function NewFlowPage() {
                 rows={4}
                 value={messageTemplate}
                 onChange={(e) => setMessageTemplate(e.target.value)}
-                placeholder="Ej: Hola {{Nombre}}, tu ID es {{Identificacion}}."
+                placeholder="e.g. Hi {{Name}}, your ID is {{Identification}}."
                 className="w-full rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-zinc-400"
               />
               <p className="text-xs text-zinc-500 mt-1">
-                Usa {"{{columnId}}"} para insertar valores del dataset.
+                Use {"{{columnId}}"} to insert dataset values.
               </p>
             </div>
           </div>
@@ -323,12 +323,12 @@ export default function NewFlowPage() {
           {/* Schedule */}
           <div className="space-y-4">
             <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wide">
-              Programacion
+              Scheduling
             </h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="flow-type" className="block text-sm font-medium mb-1">
-                  Tipo de ejecucion
+                  Execution type
                 </label>
                 <select
                   id="flow-type"
@@ -344,7 +344,7 @@ export default function NewFlowPage() {
               </div>
               <div>
                 <label htmlFor="flow-tz" className="block text-sm font-medium mb-1">
-                  Zona horaria
+                  Time zone
                 </label>
                 <select
                   id="flow-tz"
@@ -364,7 +364,7 @@ export default function NewFlowPage() {
             {scheduleType === 1 && (
               <div>
                 <label htmlFor="flow-runat" className="block text-sm font-medium mb-1">
-                  Fecha y hora de ejecucion
+                  Run date and time
                 </label>
                 <input
                   id="flow-runat"
@@ -380,7 +380,7 @@ export default function NewFlowPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="flow-rec-time" className="block text-sm font-medium mb-1">
-                    Hora del dia
+                    Time of day
                   </label>
                   <input
                     id="flow-rec-time"
@@ -392,7 +392,7 @@ export default function NewFlowPage() {
                 </div>
                 <div>
                   <label htmlFor="flow-rec-interval" className="block text-sm font-medium mb-1">
-                    Intervalo (dias)
+                    Interval (days)
                   </label>
                   <input
                     id="flow-rec-interval"
@@ -412,7 +412,7 @@ export default function NewFlowPage() {
             disabled={isSubmitting}
             className="w-full rounded bg-foreground py-2 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
           >
-            {isSubmitting ? "Creando..." : "Crear flow"}
+            {isSubmitting ? "Creating..." : "Create flow"}
           </button>
         </form>
       </div>

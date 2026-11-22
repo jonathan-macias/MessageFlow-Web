@@ -33,7 +33,7 @@ export default function DatasetDetailPage() {
         setDataset(ds);
         setColumns(cols);
       })
-      .catch((err) => setError(err.detail ?? "Error al cargar dataset."))
+      .catch((err) => setError(err.detail ?? "Failed to load the dataset."))
       .finally(() => setIsLoadingData(false));
   }, [isAuthenticated, id]);
 
@@ -41,7 +41,7 @@ export default function DatasetDetailPage() {
     if (!isAuthenticated || !id) return;
     getDatasetRows(id, page, 20)
       .then(setRowsData)
-      .catch((err) => setError(err.detail ?? "Error al cargar filas."));
+      .catch((err) => setError(err.detail ?? "Failed to load rows."));
   }, [isAuthenticated, id, page]);
 
   if (isLoading || !isAuthenticated) return null;
@@ -57,7 +57,7 @@ export default function DatasetDetailPage() {
         ]} />
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold">
-            {isLoadingData ? "Cargando..." : dataset?.name}
+            {isLoadingData ? "Loading..." : dataset?.name}
           </h1>
           {dataset && (
             <div className="flex items-center gap-2">
@@ -65,13 +65,13 @@ export default function DatasetDetailPage() {
                 href={`/datasets/${id}/query`}
                 className="rounded-full bg-blue-600 text-white px-3 py-1 text-xs font-medium hover:bg-blue-700 transition-colors"
               >
-                Preguntar con IA
+                Ask AI
               </Link>
               <Link
                 href={`/datasets/${id}/semantic-search`}
                 className="rounded-full border border-black/10 dark:border-white/10 px-3 py-1 text-xs font-medium hover:bg-black/[.04] dark:hover:bg-white/[.06] transition-colors"
               >
-                Búsqueda semántica
+                Semantic search
               </Link>
             </div>
           )}
@@ -86,21 +86,21 @@ export default function DatasetDetailPage() {
         {dataset && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
             <div className="rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-3">
-              <p className="text-zinc-500">Archivo</p>
+              <p className="text-zinc-500">File</p>
               <p className="font-medium">{dataset.sourceFileName}</p>
             </div>
             <div className="rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-3">
-              <p className="text-zinc-500">Filas</p>
+              <p className="text-zinc-500">Rows</p>
               <p className="font-medium">{dataset.rowCount}</p>
             </div>
             <div className="rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-3">
-              <p className="text-zinc-500">Columna telefono</p>
+              <p className="text-zinc-500">Phone column</p>
               <p className="font-medium">{dataset.phoneColumn}</p>
             </div>
             <div className="rounded border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-3">
-              <p className="text-zinc-500">Creado</p>
+              <p className="text-zinc-500">Created</p>
               <p className="font-medium">
-                {new Date(dataset.createdAtUtc).toLocaleDateString()}
+                {new Date(dataset.createdAtUtc).toLocaleDateString("en-US")}
               </p>
             </div>
           </div>
@@ -108,7 +108,7 @@ export default function DatasetDetailPage() {
 
         {columns.length > 0 && (
           <div>
-            <h2 className="text-lg font-semibold mb-2">Columnas</h2>
+            <h2 className="text-lg font-semibold mb-2">Columns</h2>
             <div className="flex flex-wrap gap-2">
               {columns.map((col) => (
                 <span
@@ -125,7 +125,7 @@ export default function DatasetDetailPage() {
         {rowsData && (
           <div className="space-y-3">
             <h2 className="text-lg font-semibold">
-              Registros ({rowsData.totalCount})
+              Records ({rowsData.totalCount})
             </h2>
             <div className="overflow-x-auto rounded border border-black/10 dark:border-white/10">
               <table className="w-full text-sm">
@@ -166,17 +166,17 @@ export default function DatasetDetailPage() {
                   disabled={page === 1}
                   className="rounded border border-black/10 dark:border-white/10 px-3 py-1 text-sm disabled:opacity-50"
                 >
-                  Anterior
+                  Previous
                 </button>
                 <span className="text-sm text-zinc-500">
-                  Pagina {rowsData.page} de {rowsData.totalPages}
+                  Page {rowsData.page} of {rowsData.totalPages}
                 </span>
                 <button
                   onClick={() => setPage((p) => Math.min(rowsData.totalPages, p + 1))}
                   disabled={page === rowsData.totalPages}
                   className="rounded border border-black/10 dark:border-white/10 px-3 py-1 text-sm disabled:opacity-50"
                 >
-                  Siguiente
+                  Next
                 </button>
               </div>
             )}

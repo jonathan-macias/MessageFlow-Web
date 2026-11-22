@@ -17,15 +17,15 @@ export type ColumnDataTypeValue = (typeof ColumnDataType)[keyof typeof ColumnDat
 export function dataTypeLabel(dataType: number): string {
   switch (dataType) {
     case ColumnDataType.Text:
-      return "Texto";
+      return "Text";
     case ColumnDataType.Number:
-      return "Número";
+      return "Number";
     case ColumnDataType.Date:
-      return "Fecha";
+      return "Date";
     case ColumnDataType.Boolean:
-      return "Booleano";
+      return "Boolean";
     default:
-      return "Desconocido";
+      return "Unknown";
   }
 }
 
@@ -71,15 +71,15 @@ export function operatorsForDataType(dataType: number): SemanticOperator[] {
 }
 
 const OPERATOR_LABELS: Record<SemanticOperator, string> = {
-  equals: "es igual a",
-  not_equals: "no es igual a",
-  contains: "contiene",
-  greater_than: "es mayor que",
-  greater_than_or_equal: "es mayor o igual que",
-  less_than: "es menor que",
-  less_than_or_equal: "es menor o igual que",
-  is_null: "está vacío",
-  is_not_null: "no está vacío",
+  equals: "is equal to",
+  not_equals: "is not equal to",
+  contains: "contains",
+  greater_than: "is greater than",
+  greater_than_or_equal: "is greater than or equal to",
+  less_than: "is less than",
+  less_than_or_equal: "is less than or equal to",
+  is_null: "is empty",
+  is_not_null: "is not empty",
 };
 
 export function operatorLabel(operator: SemanticOperator): string {
@@ -107,8 +107,8 @@ export function similarityTone(similarity: number): string {
   return "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300";
 }
 
-const numberFormatter = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 2 });
-const dateFormatter = new Intl.DateTimeFormat("es-CO", { dateStyle: "medium" });
+const numberFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+const dateFormatter = new Intl.DateTimeFormat("en-US", { dateStyle: "medium" });
 
 export function formatCellValue(value: string | null, dataType: number | undefined): string {
   if (value === null || value === undefined || value === "") return "—";
@@ -124,7 +124,7 @@ export function formatCellValue(value: string | null, dataType: number | undefin
     }
     case ColumnDataType.Boolean: {
       const normalized = value.trim().toLowerCase();
-      if (normalized === "true") return "Sí";
+      if (normalized === "true") return "Yes";
       if (normalized === "false") return "No";
       return value;
     }

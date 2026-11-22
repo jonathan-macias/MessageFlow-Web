@@ -54,18 +54,18 @@ export function ResultPanel({
   const isPartiallyIndexed = response.indexedRows < response.totalRows;
 
   return (
-    <section className="space-y-4" aria-label="Resultado de la búsqueda semántica">
+    <section className="space-y-4" aria-label="Semantic search results">
       <div className="rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 space-y-3">
         <p className="text-sm whitespace-pre-wrap">{response.answer}</p>
         <AppliedFilters response={response} />
         <p className="text-xs text-zinc-400">
           {hasMatches
-            ? `${response.matches.length} ${response.matches.length === 1 ? "fila coincide" : "filas coinciden"} de ${response.indexedRows.toLocaleString("es-CO")} filas indexadas`
-            : `${response.totalRows.toLocaleString("es-CO")} filas en el dataset`}
+            ? `${response.matches.length} ${response.matches.length === 1 ? "row matches" : "rows match"} out of ${response.indexedRows.toLocaleString("en-US")} indexed rows`
+            : `${response.totalRows.toLocaleString("en-US")} rows in the dataset`}
           {" · "}
           {isPartiallyIndexed
-            ? `solo ${response.indexedRows.toLocaleString("es-CO")} tienen columnas de texto y participan en la búsqueda`
-            : "todas las filas tienen columnas de texto y participan en la búsqueda"}
+            ? `only ${response.indexedRows.toLocaleString("en-US")} have text columns and take part in the search`
+            : "all rows have text columns and take part in the search"}
         </p>
       </div>
 
@@ -77,11 +77,11 @@ export function ResultPanel({
               className="rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 space-y-3"
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs text-zinc-500">Fila {match.rowNumber} del archivo</span>
+                <span className="text-xs text-zinc-500">Row {match.rowNumber} of the file</span>
                 <span
                   className={`text-xs font-medium rounded-full px-2.5 py-1 ${similarityTone(match.similarity)}`}
                 >
-                  relevancia {formatSimilarity(match.similarity)}
+                  relevance {formatSimilarity(match.similarity)}
                 </span>
               </div>
               <dl className="grid gap-x-6 gap-y-1.5 sm:grid-cols-2 text-sm">
@@ -99,10 +99,10 @@ export function ResultPanel({
         </ul>
       ) : (
         <div className="rounded-xl border border-dashed border-black/15 dark:border-white/15 p-4 space-y-1">
-          <p className="text-sm font-medium">Sin coincidencias</p>
+          <p className="text-sm font-medium">No matches</p>
           <p className="text-xs text-zinc-500">
-            La búsqueda se completó correctamente y ninguna fila se parece a la pregunta. La
-            respuesta de la IA está arriba.
+            The search completed successfully, but no row resembles the question. The AI
+            answer is shown above.
           </p>
         </div>
       )}

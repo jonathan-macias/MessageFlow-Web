@@ -71,7 +71,7 @@ export default function DatasetQueryPage() {
       setMessages((prev) =>
         prev.map((m) =>
           m.id === userMessage.id
-            ? { ...m, error: e.detail ?? "Error al consultar el dataset." }
+            ? { ...m, error: e.detail ?? "Failed to query the dataset." }
             : m,
         ),
       );
@@ -87,12 +87,12 @@ export default function DatasetQueryPage() {
         <Breadcrumbs items={[
           { label: "Datasets", href: "/datasets" },
           { label: datasetName || "...", href: `/datasets/${id}` },
-          { label: "Consultar" },
+          { label: "Query" },
         ]} />
 
-        <h1 className="text-2xl font-bold mb-1">Consultar dataset</h1>
+        <h1 className="text-2xl font-bold mb-1">Query dataset</h1>
         <p className="text-sm text-zinc-500 mb-4">
-          Haz preguntas en lenguaje natural sobre los datos de <strong>{datasetName}</strong>.
+          Ask questions in natural language about the data in <strong>{datasetName}</strong>.
         </p>
 
         {error && (
@@ -104,13 +104,13 @@ export default function DatasetQueryPage() {
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center text-zinc-400 space-y-3">
               <div className="text-4xl"> </div>
-              <p className="text-sm">Pregunta lo que quieras sobre tu dataset</p>
+              <p className="text-sm">Ask anything about your dataset</p>
               <div className="flex flex-wrap gap-2 justify-center max-w-md">
                 {[
-                  "Cuantos registros tengo?",
-                  "Cuantos por ciudad?",
-                  "Cual es el total de compras?",
-                  "Muestrame los 10 con mas compras",
+                  "How many records do I have?",
+                  "How many per city?",
+                  "What is the total of purchases?",
+                  "Show me the top 10 by purchases",
                 ].map((suggestion) => (
                   <button
                     key={suggestion}
@@ -145,22 +145,22 @@ export default function DatasetQueryPage() {
                       {/* Structured query info */}
                       <details className="text-xs text-zinc-500">
                         <summary className="cursor-pointer hover:text-foreground transition-colors">
-                          Ver consulta generada
+                          View generated query
                         </summary>
                         <div className="mt-2 space-y-1 font-mono">
-                          <p>Accion: {msg.response.query.action}</p>
+                          <p>Action: {msg.response.query.action}</p>
                           {msg.response.query.targetColumn && (
-                            <p>Columna: {msg.response.query.targetColumn}</p>
+                            <p>Column: {msg.response.query.targetColumn}</p>
                           )}
                           {msg.response.query.groupByColumn && (
-                            <p>Agrupar por: {msg.response.query.groupByColumn}</p>
+                            <p>Group by: {msg.response.query.groupByColumn}</p>
                           )}
                           {msg.response.query.limit && (
-                            <p>Limite: {msg.response.query.limit}</p>
+                            <p>Limit: {msg.response.query.limit}</p>
                           )}
                           {msg.response.query.filters.length > 0 && (
                             <div>
-                              <p>Filtros:</p>
+                              <p>Filters:</p>
                               {msg.response.query.filters.map((f, i) => (
                                 <p key={i} className="ml-2">
                                   {f.column} {f.operator} {f.value}
@@ -202,7 +202,7 @@ export default function DatasetQueryPage() {
                   ) : (
                     <div className="flex items-center gap-2 text-zinc-500">
                       <div className="w-4 h-4 border-2 border-zinc-300 border-t-zinc-600 rounded-full animate-spin" />
-                      Procesando...
+                      Processing...
                     </div>
                   )}
                 </div>
@@ -219,7 +219,7 @@ export default function DatasetQueryPage() {
             type="text"
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            placeholder="Ej: Cuantos clientes tengo de Bucaramanga?"
+            placeholder="e.g. How many customers do I have in Bucaramanga?"
             maxLength={2000}
             disabled={isQuerying}
             className="flex-1 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-50"
@@ -232,7 +232,7 @@ export default function DatasetQueryPage() {
             {isQuerying ? (
               <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
             ) : (
-              "Preguntar"
+              "Ask"
             )}
           </button>
         </form>

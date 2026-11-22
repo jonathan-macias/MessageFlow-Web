@@ -54,7 +54,7 @@ export default function LoginPage() {
             router.replace("/");
           } catch (err) {
             const e = err as { detail?: string };
-            setError(e.detail ?? "Error al iniciar sesion con Google.");
+            setError(e.detail ?? "Failed to sign in with Google.");
           }
         },
       });
@@ -92,7 +92,7 @@ export default function LoginPage() {
       router.replace("/");
     } catch (err) {
       const e = err as { detail?: string };
-      setError(e.detail ?? "Credenciales incorrectas.");
+      setError(e.detail ?? "Incorrect email or password.");
     } finally {
       setIsSubmitting(false);
     }
@@ -105,7 +105,7 @@ export default function LoginPage() {
   return (
     <div className="flex flex-1 items-center justify-center bg-zinc-50 dark:bg-black px-4">
       <div className="w-full max-w-sm space-y-6">
-        <h1 className="text-2xl font-bold text-center">Iniciar sesion</h1>
+        <h1 className="text-2xl font-bold text-center">Sign in</h1>
 
         {error && (
           <p className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 rounded p-2 text-center">
@@ -129,7 +129,7 @@ export default function LoginPage() {
           </div>
           <div>
             <label htmlFor="password" className="block text-sm font-medium mb-1">
-              Contrasena
+              Password
             </label>
             <input
               id="password"
@@ -145,7 +145,7 @@ export default function LoginPage() {
             disabled={isSubmitting}
             className="w-full rounded bg-foreground py-2 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
           >
-            {isSubmitting ? "Entrando..." : "Entrar"}
+            {isSubmitting ? "Signing in..." : "Sign in"}
           </button>
         </form>
 
@@ -157,7 +157,7 @@ export default function LoginPage() {
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="bg-zinc-50 dark:bg-black px-2 text-zinc-500">
-                  o
+                  or
                 </span>
               </div>
             </div>
@@ -166,9 +166,9 @@ export default function LoginPage() {
         )}
 
         <p className="text-center text-sm text-zinc-500">
-          No tienes cuenta?{" "}
+          Don&apos;t have an account?{" "}
           <a href="/register" className="font-medium text-foreground underline">
-            Registrate
+            Sign up
           </a>
         </p>
       </div>

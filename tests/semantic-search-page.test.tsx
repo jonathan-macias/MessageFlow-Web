@@ -27,18 +27,18 @@ const DATASET_ID = "dataset-1";
 
 const dataset = {
   id: DATASET_ID,
-  name: "Clientes",
-  sourceFileName: "clientes.csv",
+  name: "Customers",
+  sourceFileName: "customers.csv",
   rowCount: 120,
-  phoneColumn: "Telefono",
+  phoneColumn: "Phone",
   createdAtUtc: "2026-01-01T00:00:00Z",
 };
 
 const columns: DatasetColumn[] = [
-  { id: "c1", name: "Nombre", dataType: 1 },
-  { id: "c2", name: "Ciudad", dataType: 1 },
-  { id: "c3", name: "Saldo", dataType: 2 },
-  { id: "c4", name: "ClienteActivo", dataType: 4 },
+  { id: "c1", name: "Name", dataType: 1 },
+  { id: "c2", name: "City", dataType: 1 },
+  { id: "c3", name: "Balance", dataType: 2 },
+  { id: "c4", name: "ActiveCustomer", dataType: 4 },
 ];
 
 function indexingProblem(status: unknown = "Pending") {
@@ -47,14 +47,14 @@ function indexingProblem(status: unknown = "Pending") {
     title: "Semantic search indexing",
     status,
     code: "semantic_search_indexing",
-    detail: "El dataset se está indexando.",
+    detail: "The dataset is being indexed.",
     httpStatus: 409,
   };
 }
 
 function response(overrides: Partial<SemanticSearchResponse> = {}): SemanticSearchResponse {
   return {
-    answer: "Encontré 1 fila parecida a lo que describes.",
+    answer: "I found 1 row similar to what you describe.",
     topK: 10,
     appliedFilters: [],
     matches: [
@@ -62,7 +62,7 @@ function response(overrides: Partial<SemanticSearchResponse> = {}): SemanticSear
         rowId: "row-1",
         rowNumber: 7,
         similarity: 0.95,
-        values: { Nombre: "Ana Ruiz", Ciudad: "Bucaramanga", Saldo: "820000", ClienteActivo: "true" },
+        values: { Name: "Ana Ruiz", City: "Bucaramanga", Balance: "820000", ActiveCustomer: "true" },
       },
     ],
     indexedRows: 118,
@@ -82,18 +82,18 @@ async function flush() {
 async function renderPage() {
   render(<SemanticSearchPage />);
   await flush();
-  await screen.findByLabelText("¿Qué estás buscando?");
+  await screen.findByLabelText("What are you looking for?");
 }
 
 function typeQuestion(text: string) {
-  fireEvent.change(screen.getByLabelText("¿Qué estás buscando?"), { target: { value: text } });
+  fireEvent.change(screen.getByLabelText("What are you looking for?"), { target: { value: text } });
 }
 
 function submit() {
-  fireEvent.click(screen.getByRole("button", { name: "Buscar" }));
+  fireEvent.click(screen.getByRole("button", { name: "Search" }));
 }
 
-describe("Búsqueda semántica", () => {
+describe("Semantic search", () => {
   beforeEach(() => {
     api.getDataset.mockReset().mockResolvedValue(dataset);
     api.getDatasetColumns.mockReset().mockResolvedValue(columns);
@@ -104,34 +104,34 @@ describe("Búsqueda semántica", () => {
     vi.useRealTimers();
   });
 
-  it("carga la respuesta 200 y muestra las coincidencias con relevancia en porcentaje", async () => {
+  it("loads the 200 response and shows the matches with relevance as a percentage", async () => {
     api.semanticSearch.mockResolvedValue(response());
     await renderPage();
 
-    typeQuestion("clientes quedale más en Bucaramanga");
+    typeQuestion("customers in Bucaramanga who buy the most");
     submit();
     await flush();
 
     expect(api.semanticSearch).toHaveBeenCalledWith({
       datasetId: DATASET_ID,
-      question: "clientes quedale más en Bucaramanga",
+      question: "customers in Bucaramanga who buy the most",
       filters: undefined,
       topK: 10,
     });
 
-    expect(await screen.findByText(/Encontré 1 fila parecida/)).toBeInTheDocument();
-    expect(screen.getByText("relevancia 95%")).toBeInTheDocument();
-    expect(screen.getByText("Fila 7 del archivo")).toBeInTheDocument();
-    // Los valores se formatean según el dataType de la columna.
+    expect(await screen.findByText(/I found 1 row similar/)).toBeInTheDocument();
+    expect(screen.getByText("relevance 95%")).toBeInTheDocument();
+    expect(screen.getByText("Row 7 of the file")).toBeInTheDocument();
+    // Values are formatted according to the column dataType.
     expect(screen.getByText("Ana Ruiz")).toBeInTheDocument();
-    expect(screen.getByText("820.000")).toBeInTheDocument();
-    expect(screen.getByText("Sí")).toBeInTheDocument();
+    expect(screen.getByText("820,000")).toBeInTheDocument();
+    expect(screen.getByText("Yes")).toBeInTheDocument();
     expect(
-      screen.getByText(/solo 118 tienen columnas de texto/),
+      screen.getByText(/only 118 have text columns/),
     ).toBeInTheDocument();
   });
 
-  it("trata matches vacío con 200 como 'sin coincidencias', no como fallo", async () => {
+  it("treats empty matches with a 200 as 'no matches', not as a failure", async () => {
     api.semanticSearch.mockResolvedValue(
       response({
         answer: "No matching records were found for that question.",
@@ -140,37 +140,37 @@ describe("Búsqueda semántica", () => {
     );
     await renderPage();
 
-    typeQuestion("ninguno de mis clientes habla inglés");
+    typeQuestion("none of my customers speak English");
     submit();
     await flush();
 
-    expect(await screen.findByText("Sin coincidencias")).toBeInTheDocument();
+    expect(await screen.findByText("No matches")).toBeInTheDocument();
     expect(
       screen.getByText("No matching records were found for that question."),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/Algo falló de nuestro lado/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Something went wrong on our side/)).not.toBeInTheDocument();
   });
 
-  it("muestra el estado de indexado ante 409 y reintenta solo hasta tener resultados", async () => {
+  it("shows the indexing state on 409 and retries on its own until there are results", async () => {
     await renderPage();
     vi.useFakeTimers();
     api.semanticSearch
       .mockRejectedValueOnce(indexingProblem("Indexing"))
-      .mockResolvedValueOnce(response({ answer: "Listo: una fila coincide." }));
+      .mockResolvedValueOnce(response({ answer: "Done: one row matches." }));
 
-    typeQuestion("clientes de bucaramanga");
+    typeQuestion("customers from bucaramanga");
     submit();
     await flush();
 
-    const notice = screen.getByText("Preparando este dataset para búsqueda semántica");
+    const notice = screen.getByText("Preparing this dataset for semantic search");
     expect(notice).toBeInTheDocument();
-    // Es un estado informativo, no un error: se anuncia con aria-live y sin toast rojo.
+    // It is an informational state, not an error: announced with aria-live, no red alert.
     expect(notice.closest("[aria-live='polite']")).not.toBeNull();
-    expect(screen.queryByText(/Algo falló de nuestro lado/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Something went wrong on our side/)).not.toBeInTheDocument();
     expect(
-      screen.getByText(/Reintento automático cada 25 s \(intento 1 de 20\)/),
+      screen.getByText(/Automatic retry every 25 s \(attempt 1 of 20\)/),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Reintentar ahora" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retry now" })).toBeInTheDocument();
 
     await act(async () => {
       vi.advanceTimersByTime(25_000);
@@ -178,14 +178,14 @@ describe("Búsqueda semántica", () => {
     await flush();
 
     expect(api.semanticSearch).toHaveBeenCalledTimes(2);
-    expect(screen.getByText("Listo: una fila coincide.")).toBeInTheDocument();
-    expect(screen.getByText("Búsqueda semántica lista.")).toBeInTheDocument();
+    expect(screen.getByText("Done: one row matches.")).toBeInTheDocument();
+    expect(screen.getByText("Semantic search is ready.")).toBeInTheDocument();
     expect(
-      screen.queryByText("Preparando este dataset para búsqueda semántica"),
+      screen.queryByText("Preparing this dataset for semantic search"),
     ).not.toBeInTheDocument();
   });
 
-  it("respeta el máximo de reintentos y ofrece el reintento manual", async () => {
+  it("respects the maximum retries and offers a manual retry", async () => {
     await renderPage();
     vi.useFakeTimers();
     api.semanticSearch.mockRejectedValue({
@@ -193,11 +193,11 @@ describe("Búsqueda semántica", () => {
       title: "Conflict",
       status: 409,
       code: "semantic_search_indexing",
-      detail: "Indexando.",
+      detail: "Indexing.",
       httpStatus: 409,
     });
 
-    typeQuestion("clientes de bucaramanga");
+    typeQuestion("customers from bucaramanga");
     submit();
     await flush();
     expect(api.semanticSearch).toHaveBeenCalledTimes(1);
@@ -211,7 +211,7 @@ describe("Búsqueda semántica", () => {
 
     expect(api.semanticSearch).toHaveBeenCalledTimes(20);
     expect(
-      screen.getByText("Seguimos esperando al servidor. Puedes reintentar cuando quieras."),
+      screen.getByText("We are still waiting for the server. You can retry whenever you like."),
     ).toBeInTheDocument();
 
     await act(async () => {
@@ -220,28 +220,28 @@ describe("Búsqueda semántica", () => {
     expect(api.semanticSearch).toHaveBeenCalledTimes(20);
   });
 
-  it("corta el reintento automático si el usuario edita la pregunta", async () => {
+  it("stops the automatic retry if the user edits the question", async () => {
     await renderPage();
     vi.useFakeTimers();
     api.semanticSearch.mockRejectedValue(indexingProblem());
 
-    typeQuestion("clientes de bucaramanga");
+    typeQuestion("customers from bucaramanga");
     submit();
     await flush();
     expect(api.semanticSearch).toHaveBeenCalledTimes(1);
 
-    typeQuestion("clientes de cali");
+    typeQuestion("customers from cali");
     await act(async () => {
       vi.advanceTimersByTime(60_000);
     });
 
     expect(api.semanticSearch).toHaveBeenCalledTimes(1);
     expect(
-      screen.queryByText("Preparando este dataset para búsqueda semántica"),
+      screen.queryByText("Preparing this dataset for semantic search"),
     ).not.toBeInTheDocument();
   });
 
-  it("responde 404 sin insinuar que el dataset existe", async () => {
+  it("answers 404 without hinting that the dataset exists", async () => {
     api.getDataset.mockRejectedValue({
       type: "about:blank",
       title: "Not Found",
@@ -253,13 +253,13 @@ describe("Búsqueda semántica", () => {
     render(<SemanticSearchPage />);
     await flush();
 
-    expect(screen.getByText("No encontramos este dataset.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Volver a mis datasets" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Buscar" })).not.toBeInTheDocument();
-    expect(screen.queryByText(/otro usuario/)).not.toBeInTheDocument();
+    expect(screen.getByText("We could not find this dataset.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Back to my datasets" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Search" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/another user/)).not.toBeInTheDocument();
   });
 
-  it("responde 404 de la búsqueda sin insinuar que el recurso existe", async () => {
+  it("answers a search 404 without hinting that the resource exists", async () => {
     api.semanticSearch.mockRejectedValue({
       type: "about:blank",
       title: "Not Found",
@@ -269,14 +269,14 @@ describe("Búsqueda semántica", () => {
     });
     await renderPage();
 
-    typeQuestion("clientes de bucaramanga");
+    typeQuestion("customers from bucaramanga");
     submit();
     await flush();
 
-    expect(screen.getByText("No encontramos este dataset.")).toBeInTheDocument();
+    expect(screen.getByText("We could not find this dataset.")).toBeInTheDocument();
   });
 
-  it("oculta la búsqueda semántica ante 503 y ofrece la consulta estructurada", async () => {
+  it("hides semantic search on 503 and offers the structured query", async () => {
     api.semanticSearch.mockRejectedValue({
       type: "about:blank",
       title: "Service Unavailable",
@@ -286,21 +286,21 @@ describe("Búsqueda semántica", () => {
     });
     await renderPage();
 
-    typeQuestion("clientes de bucaramanga");
+    typeQuestion("customers from bucaramanga");
     submit();
     await flush();
 
     expect(
-      screen.getByText("La búsqueda semántica no está disponible."),
+      screen.getByText("Semantic search is not available."),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "consulta estructurada" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "structured query" })).toHaveAttribute(
       "href",
       `/datasets/${DATASET_ID}/query`,
     );
-    expect(screen.queryByRole("button", { name: "Buscar" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Search" })).not.toBeInTheDocument();
   });
 
-  it("muestra los errores de validación junto al campo", async () => {
+  it("shows validation errors next to the field", async () => {
     api.semanticSearch.mockRejectedValue({
       type: "about:blank",
       title: "Bad Request",
@@ -317,58 +317,58 @@ describe("Búsqueda semántica", () => {
     await flush();
 
     expect(screen.getByText("The question field is required.")).toBeInTheDocument();
-    expect(screen.getByText("Revisa los campos marcados.")).toBeInTheDocument();
+    expect(screen.getByText("Check the highlighted fields.")).toBeInTheDocument();
   });
 
-  it("trata un 400 sin code como regla de negocio, no como error del formulario", async () => {
+  it("treats a 400 without a code as a business rule, not a form error", async () => {
     api.semanticSearch.mockRejectedValue({
       type: "about:blank",
       title: "Bad Request",
       status: 400,
-      detail: "La columna 'Saldo' no existe en este dataset.",
+      detail: "Column 'Balance' does not exist in this dataset.",
       httpStatus: 400,
     });
     await renderPage();
 
-    typeQuestion("clientes con saldo alto");
+    typeQuestion("customers with a high balance");
     submit();
     await flush();
 
-    expect(screen.getByText("No pudimos ejecutar esta búsqueda.")).toBeInTheDocument();
-    expect(screen.getByText("La columna 'Saldo' no existe en este dataset.")).toBeInTheDocument();
-    expect(screen.queryByText(/Algo falló de nuestro lado/)).not.toBeInTheDocument();
+    expect(screen.getByText("We could not run this search.")).toBeInTheDocument();
+    expect(screen.getByText("Column 'Balance' does not exist in this dataset.")).toBeInTheDocument();
+    expect(screen.queryByText(/Something went wrong on our side/)).not.toBeInTheDocument();
   });
 
-  it("ofrece la consulta estructurada si el dataset no tiene columnas de texto", async () => {
-    api.getDatasetColumns.mockResolvedValue([{ id: "c3", name: "Saldo", dataType: 2 }]);
+  it("offers the structured query if the dataset has no text columns", async () => {
+    api.getDatasetColumns.mockResolvedValue([{ id: "c3", name: "Balance", dataType: 2 }]);
 
     render(<SemanticSearchPage />);
     await flush();
 
     expect(
-      screen.getByText(/no tiene columnas de texto, así que no admite búsqueda semántica/),
+      screen.getByText(/has no text columns, so it does not support semantic search/),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "consulta estructurada" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "structured query" })).toHaveAttribute(
       "href",
       `/datasets/${DATASET_ID}/query`,
     );
-    expect(screen.queryByRole("button", { name: "Buscar" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Search" })).not.toBeInTheDocument();
   });
 
-  it("envía el filtro numérico y omite el value en is_null", async () => {
+  it("sends the numeric filter and omits value on is_null", async () => {
     api.semanticSearch.mockResolvedValue(
       response({
-        appliedFilters: [{ column: "Saldo", operator: "equals", value: "500000" }],
+        appliedFilters: [{ column: "Balance", operator: "equals", value: "500000" }],
       }),
     );
     await renderPage();
 
-    typeQuestion("clientes con saldo alto");
-    fireEvent.click(screen.getByRole("button", { name: "Agregar filtro" }));
-    fireEvent.change(screen.getByLabelText("Columna del filtro 1"), {
-      target: { value: "Saldo" },
+    typeQuestion("customers with a high balance");
+    fireEvent.click(screen.getByRole("button", { name: "Add filter" }));
+    fireEvent.change(screen.getByLabelText("Column of filter 1"), {
+      target: { value: "Balance" },
     });
-    fireEvent.change(screen.getByLabelText("Valor del filtro sobre Saldo"), {
+    fireEvent.change(screen.getByLabelText("Filter value for Balance"), {
       target: { value: "500000" },
     });
     submit();
@@ -376,30 +376,30 @@ describe("Búsqueda semántica", () => {
 
     expect(api.semanticSearch).toHaveBeenCalledWith(
       expect.objectContaining({
-        filters: [{ column: "Saldo", operator: "equals", value: "500000" }],
+        filters: [{ column: "Balance", operator: "equals", value: "500000" }],
       }),
     );
-    expect(await screen.findByText(/Saldo es igual a "500000"/)).toBeInTheDocument();
+    expect(await screen.findByText(/Balance is equal to "500000"/)).toBeInTheDocument();
 
-    // is_null no debe enviar value: el backend responde 400 si lo recibe.
-    fireEvent.click(screen.getByRole("button", { name: "Agregar filtro" }));
-    fireEvent.change(screen.getByLabelText("Columna del filtro 2"), {
-      target: { value: "Ciudad" },
+    // is_null must not send value: the backend answers 400 if it receives one.
+    fireEvent.click(screen.getByRole("button", { name: "Add filter" }));
+    fireEvent.change(screen.getByLabelText("Column of filter 2"), {
+      target: { value: "City" },
     });
-    fireEvent.change(screen.getByLabelText("Operador del filtro 2"), {
+    fireEvent.change(screen.getByLabelText("Operator of filter 2"), {
       target: { value: "is_null" },
     });
-    expect(screen.queryByLabelText("Valor del filtro sobre Ciudad")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Filter value for City")).not.toBeInTheDocument();
     submit();
     await flush();
 
     const lastCall = api.semanticSearch.mock.calls.at(-1)?.[0];
     expect(lastCall.filters).toHaveLength(2);
-    expect(lastCall.filters[1]).toEqual({ column: "Ciudad", operator: "is_null" });
+    expect(lastCall.filters[1]).toEqual({ column: "City", operator: "is_null" });
     expect(Object.hasOwn(lastCall.filters[1], "value")).toBe(false);
   });
 
-  it("ofrece reintento ante un error de servidor", async () => {
+  it("offers a retry on a server error", async () => {
     api.semanticSearch
       .mockRejectedValueOnce({
         type: "about:blank",
@@ -408,18 +408,46 @@ describe("Búsqueda semántica", () => {
         detail: "",
         httpStatus: 500,
       })
-      .mockResolvedValueOnce(response({ answer: "Ahora sí: una fila coincide." }));
+      .mockResolvedValueOnce(response({ answer: "Now it works: one row matches." }));
     await renderPage();
 
-    typeQuestion("clientes de bucaramanga");
+    typeQuestion("customers from bucaramanga");
     submit();
     await flush();
 
-    expect(screen.getByText("Algo falló de nuestro lado.")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+    expect(screen.getByText("Something went wrong on our side.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     await flush();
 
     expect(api.semanticSearch).toHaveBeenCalledTimes(2);
-    expect(screen.getByText("Ahora sí: una fila coincide.")).toBeInTheDocument();
+    expect(screen.getByText("Now it works: one row matches.")).toBeInTheDocument();
+  });
+
+  it("shows a rate-limit notice on 429 with the server detail and a retry button", async () => {
+    api.semanticSearch
+      .mockRejectedValueOnce({
+        type: "about:blank",
+        title: "Too Many Requests",
+        status: 429,
+        detail: "Too many requests. Please wait a moment and try again. Try again in 12 seconds.",
+        httpStatus: 429,
+      })
+      .mockResolvedValueOnce(response({ answer: "Back to normal: one row matches." }));
+    await renderPage();
+
+    typeQuestion("customers from bucaramanga");
+    submit();
+    await flush();
+
+    expect(screen.getByText("Too many requests.")).toBeInTheDocument();
+    expect(screen.getByText(/Try again in 12 seconds\./)).toBeInTheDocument();
+    expect(screen.queryByText(/Something went wrong on our side/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await flush();
+
+    expect(api.semanticSearch).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("Back to normal: one row matches.")).toBeInTheDocument();
+    expect(screen.queryByText("Too many requests.")).not.toBeInTheDocument();
   });
 });
